@@ -310,6 +310,8 @@ def main():
         st.plotly_chart(trend_fig, use_container_width=True)
     
     st.header("🔬 Cluster Deep Dive Analysis")
+    
+    # Assuming rfm_data is already loaded
     cluster_stats = rfm_data.groupby('Cluster').agg({
         'Recency': 'mean',
         'Frequency': 'mean',
@@ -341,13 +343,15 @@ def main():
                 <div class='metric-box'>
                     <b>Total Revenue:</b> ${stats['Total_Revenue']:,.2f} ({(stats['Total_Revenue']/rfm_data['Monetary'].sum()*100):.1f}% of total)
                 </div>
-                st.markdown("""
-                    <h3 style='color: {tier_color}; border-bottom: 2px solid {tier_color}; padding-bottom: 8px;'>
-                        Recommended Engagement Strategy
-                    </h3>
-                
-                    {get_enhanced_recommendations(tier, stats, rfm_data)}
             </div>
+            """, unsafe_allow_html=True)
+
+            # Recommended engagement strategy
+            st.markdown(f"""
+            <h3 style='color: {tier_color}; border-bottom: 2px solid {tier_color}; padding-bottom: 8px;'>
+                Recommended Engagement Strategy
+            </h3>
+            {get_enhanced_recommendations(tier, stats, rfm_data)}
             """, unsafe_allow_html=True)
     
     st.sidebar.markdown("---")
@@ -362,7 +366,7 @@ def main():
         )
 
 
-# Add these helper functions
+# Helper functions
 def get_comparison_arrow(value, average):
     if value > average:
         return "↑ Above average"
@@ -379,7 +383,7 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
         return f"""
         <div style='margin-top: 10px;'>
             <div style='background-color: #e6f7ff; padding: 12px; border-radius: 8px; margin-bottom: 10px;'>
-                <h4 style='color: #1a73e8; margin-top: 0;'> VIP Retention Strategy</h4>
+                <h4 style='color: #1a73e8; margin-top: 0;'>💎 VIP Retention Strategy</h4>
                 <ul style='color: black;'>
                     <li><b>Exclusive Access:</b> Invite to VIP program (Top {tier} customers spending ${monetary_value:,.2f}+)</li>
                     <li><b>Personal Outreach:</b> Dedicated account manager with quarterly business reviews</li>
@@ -388,7 +392,7 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
             </div>
             
             <div style='background-color: #f0f7ff; padding: 12px; border-radius: 8px;'>
-                <h4 style='color: #1a73e8; margin-top: 0;'> Growth Opportunities</h4>
+                <h4 style='color: #1a73e8; margin-top: 0;'>🚀 Growth Opportunities</h4>
                 <ul style='color: black;'>
                     <li><b>Premium Upsell:</b> Target with enterprise solutions 30-50% above current spend</li>
                     <li><b>Advocacy Program:</b> Enroll in customer reference program with incentives</li>
@@ -401,7 +405,7 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
         return f"""
         <div style='margin-top: 10px;'>
             <div style='background-color: #fff3e0; padding: 12px; border-radius: 8px; margin-bottom: 10px;'>
-                <h4 style='color: #fb8c00; margin-top: 0;'>Value Optimization</h4>
+                <h4 style='color: #fb8c00; margin-top: 0;'>📈 Value Optimization</h4>
                 <ul style='color: black;'>
                     <li><b>Smart Bundling:</b> Create packages to increase average order by 20-30%</li>
                     <li><b>Loyalty Program:</b> Earn points for reaching ${monetary_value*1.5:,.0f} quarterly spend</li>
@@ -410,7 +414,7 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
             </div>
             
             <div style='background-color: #fff8e1; padding: 12px; border-radius: 8px;'>
-                <h4 style='color: #fb8c00; margin-top: 0;'> Engagement Boost</h4>
+                <h4 style='color: #fb8c00; margin-top: 0;'>🔄 Engagement Boost</h4>
                 <ul style='color: black;'>
                     <li><b>Usage Tips:</b> Share best practices to increase product adoption</li>
                     <li><b>Feedback Sessions:</b> Schedule quarterly check-ins to understand needs</li>
@@ -427,7 +431,7 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
         return f"""
         <div style='margin-top: 10px;'>
             <div style='background-color: #ffebee; padding: 12px; border-radius: 8px; margin-bottom: 10px;'>
-                <h4 style='color: #e53935; margin-top: 0;'> Win-Back Strategy</h4>
+                <h4 style='color: #e53935; margin-top: 0;'>🔙 Win-Back Strategy</h4>
                 <ul style='color: black;'>
                     <li><b>Special Offer:</b> {winback_days}-day reactivation discount</li>
                     <li><b>Re-engagement:</b> "We've missed you" campaign after {reactivation_days} days</li>
@@ -436,7 +440,7 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
             </div>
             
             <div style='background-color: #fce4ec; padding: 12px; border-radius: 8px;'>
-                <h4 style='color: #e53935; margin-top: 0;'> Education & Support</h4>
+                <h4 style='color: #e53935; margin-top: 0;'>📚 Education & Support</h4>
                 <ul style='color: black;'>
                     <li><b>Onboarding:</b> Free setup assistance and training</li>
                     <li><b>Resource Center:</b> Curated how-to guides and tutorials</li>
@@ -445,13 +449,6 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
             </div>
         </div>
         """
-        
+
 if __name__ == "__main__":
     main()
-
-
-
-
-
-        
-
