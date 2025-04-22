@@ -375,12 +375,6 @@ def get_comparison_arrow(value, average):
     else:
         return "→ At average"
 
-import streamlit as st
-
-import streamlit as st
-
-import streamlit as st
-
 def get_enhanced_recommendations(tier, stats, rfm_data):
     recency_days = int(stats['Recency'])
     monetary_value = stats['Monetary']
@@ -434,7 +428,7 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
         reactivation_days = int(recency_days * 1.5)
         entry_point = rfm_data['Monetary'].quantile(0.25)
         
-        result = f"""
+        return f"""
         <div style='margin-top: 10px;'>
             <div style='background-color: #ffebee; padding: 12px; border-radius: 8px; margin-bottom: 10px;'>
                 <h4 style='color: #e53935; margin-top: 0;'>🔙 Win-Back Strategy</h4>
@@ -444,39 +438,26 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
                     <li><b>Low-Risk Entry:</b> Starter products under ${entry_point:,.2f}</li>
                 </ul>
             </div>
+            
+            <div style='background-color: #fff8e1; padding: 12px; border-radius: 8px; margin-bottom: 10px;'>
+                <h4 style='color: #fb8c00; margin-top: 0;'>🔄 Engagement Boost</h4>
+                <ul style='color: black;'>
+                    <li><b>Usage Tips:</b> Share best practices to increase product adoption</li>
+                    <li><b>Feedback Sessions:</b> Schedule quarterly check-ins to understand needs</li>
+                    <li><b>Limited Offers:</b> Provide time-sensitive upgrades</li>
+                </ul>
+            </div>
+            
+            <div style='background-color: #fce4ec; padding: 12px; border-radius: 8px;'>
+                <h4 style='color: #e53935; margin-top: 0;'>📚 Education & Support</h4>
+                <ul style='color: black;'>
+                    <li><b>Onboarding:</b> Free setup assistance and training</li>
+                    <li><b>Resource Center:</b> Curated how-to guides and tutorials</li>
+                    <li><b>Survey:</b> Identify barriers to increased usage</li>
+                </ul>
+            </div>
         </div>
         """
-
-        # Add Engagement Boost section using st.markdown
-        engagement_boost_html = """
-        <div style='background-color: #fff8e1; padding: 12px; border-radius: 8px;'>
-            <h4 style='color: #fb8c00; margin-top: 0;'>🔄 Engagement Boost</h4>
-            <ul style='color: black;'>
-                <li><b>Usage Tips:</b> Share best practices to increase product adoption</li>
-                <li><b>Feedback Sessions:</b> Schedule quarterly check-ins to understand needs</li>
-                <li><b>Limited Offers:</b> Provide time-sensitive upgrades</li>
-            </ul>
-        </div>
-        """
-
-        # Add Education & Support section using st.markdown
-        education_support_html = """
-        <div style='background-color: #fce4ec; padding: 12px; border-radius: 8px;'>
-            <h4 style='color: #e53935; margin-top: 0;'>📚 Education & Support</h4>
-            <ul style='color: black;'>
-                <li><b>Onboarding:</b> Free setup assistance and training</li>
-                <li><b>Resource Center:</b> Curated how-to guides and tutorials</li>
-                <li><b>Survey:</b> Identify barriers to increased usage</li>
-            </ul>
-        </div>
-        """
-
-        # Render the full HTML using st.markdown
-        st.markdown(result, unsafe_allow_html=True)
-        st.markdown(engagement_boost_html, unsafe_allow_html=True)
-        st.markdown(education_support_html, unsafe_allow_html=True)
-
-
 
 
 if __name__ == "__main__":
