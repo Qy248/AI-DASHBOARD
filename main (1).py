@@ -439,14 +439,16 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
                 </ul>
             </div>
             
-            <div style='background-color: #fce4ec; padding: 12px; border-radius: 8px;'>
-                <h4 style='color: #e53935; margin-top: 0;'>📚 Education & Support</h4>
-                <ul style='color: black;'>
-                    <li><b>Onboarding:</b> Free setup assistance and training</li>
-                    <li><b>Resource Center:</b> Curated how-to guides and tutorials</li>
-                    <li><b>Survey:</b> Identify barriers to increased usage</li>
-                </ul>
-            </div>
+            st.markdown("""
+                <div style='background-color: #fce4ec; padding: 12px; border-radius: 8px;'>
+                    <h4 style='color: #e53935; margin-top: 0;'>📚 Education & Support</h4>
+                    <ul style='color: black;'>
+                        <li><b>Onboarding:</b> Free setup assistance and training</li>
+                        <li><b>Resource Center:</b> Curated how-to guides and tutorials</li>
+                        <li><b>Survey:</b> Identify barriers to increased usage</li>
+                    </ul>
+                </div>
+                """, unsafe_allow_html=True)
         </div>
         """
 
