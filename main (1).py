@@ -37,10 +37,10 @@ st.markdown("""
         color: #000000;
     }
     .st-b7, .st-bb, .st-c0, .st-c1, .st-c2 {
-        color: #FFFFFF !important;
+        color: #000000 !important;
     }
     h1, h2, h3, h4, h5, h6 {
-        color: #FFFFFF !important;
+        color: #000000 !important;
     }
     .stButton>button {
         background-color: #1a73e8;
@@ -116,11 +116,11 @@ def create_comprehensive_analysis(cluster_num, stats, rfm_data):
     fig.add_trace(go.Indicator(
         mode="number+gauge",
         value=stats['Monetary'],
-        number={'prefix': "$", 'font': {'size': 24, 'color': 'white'}},
-        title={'text': f"<b>Cluster {cluster_num}</b><br>{tier}", 'font': {'color': 'white'}},
+        number={'prefix': "$", 'font': {'size': 24, 'color': 'black'}},
+        title={'text': f"<b>Cluster {cluster_num}</b><br>{tier}", 'font': {'color': 'black'}},
         gauge={
             'shape': "bullet",
-            'axis': {'range': [0, rfm_data['Monetary'].max()*1.1], 'tickcolor': 'white'},
+            'axis': {'range': [0, rfm_data['Monetary'].max()*1.1], 'tickcolor': 'black'},
             'bar': {'color': tier_color},
             'bgcolor': 'white',
             'borderwidth': 2
