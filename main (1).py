@@ -48,10 +48,32 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+@st.cache_data
 def load_data():
-    # This would be replaced with your actual data loading logic
-    # For now, we'll assume the data is already loaded as df
-    return pd.DataFrame()
+    try:
+        rfm_data = joblib.load("rfm_data_original.joblib")
+        models = {
+            'KMeans': {
+                'RF': joblib.load("KMeans_RF_model.joblib"),
+                'FM': joblib.load("KMeans_FM_model.joblib"),
+                'RFM': joblib.load("KMeans_RFM_model.joblib")
+            },
+            'BIRCH': {
+                'RF': joblib.load("BIRCH_RF_model.joblib"),
+                'FM': joblib.load("BIRCH_FM_model.joblib"),
+                'RFM': joblib.load("BIRCH_RFM_model.joblib")
+            },
+            'GMM': {
+                'RF': joblib.load("GMM_RF_model.joblib"),
+                'FM': joblib.load("GMM_FM_model.joblib"),
+                'RFM': joblib.load("GMM_RFM_model.joblib")
+            }
+        }
+        return rfm_data, models
+    except Exception as e:
+        st.error(f"Error loading data: {str(e)}")
+        return None, None
+
 
 # Load data
 df = load_data()
