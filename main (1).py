@@ -335,13 +335,21 @@ def main():
         )
     )
     st.plotly_chart(fig_3d, use_container_width=True)
+    
+    st.header("🎯 Combined CLV + Matrix Insights")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.plotly_chart(plot_clv_prediction(rfm_data), use_container_width=True)
+    with col2:
+        st.plotly_chart(plot_segmentation_matrix(rfm_data), use_container_width=True)
 
-    st.header("💰 Customer Lifetime Value (CLV)")
-    st.plotly_chart(plot_clv_prediction(rfm_data), use_container_width=True)
-
-        
-    st.header("🔍 Customer Segmentation Matrix")
-    st.plotly_chart(plot_segmentation_matrix(rfm_data), use_container_width=True)
+# Show overlapping customers
+overlap_customers = rfm_data[
+    (rfm_data['Cluster'] == 'High') & 
+    (rfm_data['Recency'] < 30)
+]
+st.metric("High-Value Active Customers", len(overlap_customers))
     
     trend_fig = create_trend_analysis(rfm_data)
     if trend_fig:
