@@ -9,38 +9,46 @@ from sklearn.preprocessing import StandardScaler
 
 # Set page config
 st.set_page_config(
-    page_title="RFM Clustering Dashboard",
-    page_icon="📊",
+    page_title="Advanced RFM Analytics Dashboard",
+    page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS for blue theme with black text
 st.markdown("""
 <style>
+    .main {
+        background-color: #f8f9fa;
+    }
     .cluster-card {
         border-radius: 10px;
         padding: 15px;
         margin: 10px 0;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .high-value {
-        background-color: #e6f7e6;
-        border-left: 5px solid #4CAF50;
-    }
-    .medium-value {
-        background-color: #fff3e6;
-        border-left: 5px solid #FF9800;
-    }
-    .low-value {
-        background-color: #ffebee;
-        border-left: 5px solid #F44336;
+        background-color: #e6f2ff;
+        border-left: 5px solid #1a73e8;
     }
     .metric-box {
         border-radius: 5px;
         padding: 10px;
         margin: 5px 0;
-        background-color: #f8f9fa;
+        background-color: #f0f7ff;
+        color: #000000;
+    }
+    .st-b7, .st-bb, .st-c0, .st-c1, .st-c2 {
+        color: #000000 !important;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #000000 !important;
+    }
+    .stButton>button {
+        background-color: #1a73e8;
+        color: white;
+    }
+    .stDownloadButton>button {
+        background-color: #4285f4;
+        color: white;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -76,235 +84,155 @@ def get_value_tier(monetary_value, rfm_data):
     q75 = rfm_data['Monetary'].quantile(0.75)
     
     if monetary_value > q75:
-        return "High Value", "high-value"
+        return "High Value", "#1a73e8"  # Dark blue
     elif monetary_value > q25:
-        return "Medium Value", "medium-value"
+        return "Medium Value", "#4285f4"  # Medium blue
     else:
-        return "Low Value", "low-value"
+        return "Low Value", "#8ab4f8"  # Light blue
 
-def create_cluster_insight(cluster_num, value_tier, recency, frequency, monetary, rfm_data):
-    # Color mapping
-    color_map = {
-        'High Value': '#2ecc71',
-        'Medium Value': '#f39c12',
-        'Low Value': '#e74c3c'
-    }
-    tier_color = color_map.get(value_tier, '#3498db')
+def create_comprehensive_analysis(cluster_num, stats, rfm_data):
+    tier, tier_color = get_value_tier(stats['Monetary'], rfm_data)
     
-    # Create figure with subplots
+    # Create subplots grid
     fig = make_subplots(
-        rows=1, cols=2,
-        specs=[[{'type': 'indicator'}, {'type': 'xy'}]],
-        column_widths=[0.4, 0.6]
+        rows=2, cols=3,
+        specs=[
+            [{"type": "indicator"}, {"type": "pie"}, {"type": "bar"}],
+            [{"type": "scatter"}, {"type": "box"}, {"type": "histogram"}]
+        ],
+        subplot_titles=(
+            "Monetary Value", 
+            "Cluster Distribution", 
+            "RFM Comparison",
+            "Recency vs Frequency",
+            "Spending Distribution",
+            "Customer Value Histogram"
+        ),
+        horizontal_spacing=0.1,
+        vertical_spacing=0.15
     )
     
-    # Bullet chart for monetary value
+    # 1. Monetary value indicator
     fig.add_trace(go.Indicator(
         mode="number+gauge",
-        value=monetary,
-        number={'prefix': "$", 'font': {'size': 24}},
-        title={'text': f"<b>Cluster {cluster_num}</b><br>{value_tier}", 'font': {'size': 18}},
+        value=stats['Monetary'],
+        number={'prefix': "$", 'font': {'size': 24, 'color': 'black'}},
+        title={'text': f"<b>Cluster {cluster_num}</b><br>{tier}", 'font': {'color': 'black'}},
         gauge={
             'shape': "bullet",
-            'axis': {'range': [0, rfm_data['Monetary'].max()*1.1]},
+            'axis': {'range': [0, rfm_data['Monetary'].max()*1.1], 'tickcolor': 'black'},
             'bar': {'color': tier_color},
             'bgcolor': 'white',
             'borderwidth': 2
         }
     ), row=1, col=1)
     
-    # RFM comparison bar chart
-    fig.add_trace(go.Bar(
-        x=['Recency (days)', 'Frequency', 'Monetary ($)'],
-        y=[recency, frequency, monetary],
-        name='Cluster Avg',
-        marker_color=tier_color,
-        text=[f"{recency:.1f}", f"{frequency:.1f}", f"${monetary:,.2f}"],
-        textposition='auto'
+    # 2. Cluster distribution pie chart
+    cluster_counts = rfm_data['Cluster'].value_counts()
+    fig.add_trace(go.Pie(
+        labels=cluster_counts.index,
+        values=cluster_counts.values,
+        marker=dict(colors=['#1a73e8', '#4285f4', '#8ab4f8']),
+        textinfo='percent+label',
+        hole=0.3
     ), row=1, col=2)
     
-    # Add reference lines using shapes instead of add_hline
-    avg_recency = rfm_data['Recency'].mean()
-    avg_frequency = rfm_data['Frequency'].mean()
-    avg_monetary = rfm_data['Monetary'].mean()
+    # 3. RFM comparison bar chart
+    fig.add_trace(go.Bar(
+        x=['Recency', 'Frequency', 'Monetary'],
+        y=[stats['Recency'], stats['Frequency'], stats['Monetary']],
+        marker_color=tier_color,
+        text=[f"{stats['Recency']:.1f}", f"{stats['Frequency']:.1f}", f"${stats['Monetary']:,.2f}"],
+        textposition='auto',
+        textfont={'color': 'black'}
+    ), row=1, col=3)
     
-    fig.add_shape(
-        type="line",
-        x0=-0.5, x1=2.5,
-        y0=avg_recency, y1=avg_recency,
-        line=dict(color="gray", dash="dot"),
-        row=1, col=2
-    )
+    # 4. Recency vs Frequency scatter
+    cluster_data = rfm_data[rfm_data['Cluster'] == cluster_num]
+    fig.add_trace(go.Scatter(
+        x=cluster_data['Recency'],
+        y=cluster_data['Frequency'],
+        mode='markers',
+        marker=dict(color=tier_color, size=8, opacity=0.7),
+        name=f'Cluster {cluster_num}'
+    ), row=2, col=1)
+    fig.update_xaxes(title_text="Recency (days)", row=2, col=1)
+    fig.update_yaxes(title_text="Frequency", row=2, col=1)
     
-    fig.add_shape(
-        type="line",
-        x0=-0.5, x1=2.5,
-        y0=avg_frequency, y1=avg_frequency,
-        line=dict(color="gray", dash="dot"),
-        row=1, col=2
-    )
+    # 5. Monetary value box plot
+    fig.add_trace(go.Box(
+        y=cluster_data['Monetary'],
+        name='Spending',
+        marker_color=tier_color,
+        boxmean=True
+    ), row=2, col=2)
+    fig.update_yaxes(title_text="Monetary Value ($)", row=2, col=2)
     
-    fig.add_shape(
-        type="line",
-        x0=-0.5, x1=2.5,
-        y0=avg_monetary, y1=avg_monetary,
-        line=dict(color="gray", dash="dot"),
-        row=1, col=2
-    )
-    
-    # Add annotation only for the first line
-    fig.add_annotation(
-        x=0, y=avg_recency*1.05,
-        text="Dataset Average",
-        showarrow=False,
-        row=1, col=2
-    )
+    # 6. Customer value histogram
+    fig.add_trace(go.Histogram(
+        x=cluster_data['Monetary'],
+        nbinsx=20,
+        marker_color=tier_color,
+        opacity=0.7
+    ), row=2, col=3)
+    fig.update_xaxes(title_text="Customer Value ($)", row=2, col=3)
+    fig.update_yaxes(title_text="Count", row=2, col=3)
     
     # Update layout
     fig.update_layout(
-        title=f"<b>Cluster {cluster_num} Analysis</b><br>"
-              f"<span style='color:{tier_color}'>{value_tier} Customers</span>",
-        height=300,
-        margin=dict(l=20, r=20, t=80, b=20),
+        height=900,
+        title=f"<b>Comprehensive Cluster {cluster_num} Analysis</b><br><span style='color:{tier_color}'>{tier} Customers</span>",
         showlegend=False,
-        plot_bgcolor='rgba(0,0,0,0)'
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='black'),
+        margin=dict(t=100)
     )
     
-    fig.update_xaxes(title_text="RFM Metrics", row=1, col=2)
-    fig.update_yaxes(title_text="Value", row=1, col=2)
-    
-    return fig
+    return fig, tier, tier_color
 
-def show_cluster_analysis(rfm_data, algorithm, dimension):
-    cluster_col = f"{algorithm}_Cluster_{dimension}"
-    
-    # Cluster distribution
-    st.subheader("🔢 Cluster Distribution")
-    cluster_counts = rfm_data[cluster_col].value_counts().sort_index()
-    
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Clusters", len(cluster_counts))
-    col2.metric("Total Customers", len(rfm_data))
-    col3.metric("Avg Monetary Value", f"${rfm_data['Monetary'].mean():,.2f}")
-    
-    # Cluster visualization
-    st.subheader("📊 Cluster Visualization")
-    if dimension == "RF":
-        fig = px.scatter(
-            rfm_data,
-            x="Recency",
-            y="Frequency",
-            color=cluster_col,
-            title=f"{algorithm} Clustering (Recency vs Frequency)",
-            hover_data=["Monetary"],
-            color_continuous_scale=px.colors.sequential.Viridis
-        )
-    elif dimension == "FM":
-        fig = px.scatter(
-            rfm_data,
-            x="Frequency",
-            y="Monetary",
-            color=cluster_col,
-            title=f"{algorithm} Clustering (Frequency vs Monetary)",
-            hover_data=["Recency"],
-            color_continuous_scale=px.colors.sequential.Viridis
-        )
-    else:
-        fig = px.scatter_3d(
-            rfm_data,
-            x="Recency",
-            y="Frequency",
-            z="Monetary",
-            color=cluster_col,
-            title=f"{algorithm} Clustering (Recency vs Frequency vs Monetary)",
-            color_continuous_scale=px.colors.sequential.Viridis
-        )
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Cluster insights
-    st.subheader("🔍 Detailed Cluster Insights")
-    
-    # Calculate cluster stats
-    if dimension == "RF":
-        cluster_stats = rfm_data.groupby(cluster_col)[['Recency', 'Frequency', 'Monetary']].mean()
-    elif dimension == "FM":
-        cluster_stats = rfm_data.groupby(cluster_col)[['Frequency', 'Monetary', 'Recency']].mean()
-    else:
-        cluster_stats = rfm_data.groupby(cluster_col)[['Recency', 'Frequency', 'Monetary']].mean()
-    
-    cluster_stats['Value Tier'] = cluster_stats['Monetary'].apply(
-        lambda x: get_value_tier(x, rfm_data)[0]
-    )
-    
-    # Sort clusters by monetary value
-    sorted_clusters = cluster_stats.sort_values('Monetary', ascending=False).index
-    
-    for cluster in sorted_clusters:
-        stats = cluster_stats.loc[cluster]
-        tier, tier_class = get_value_tier(stats['Monetary'], rfm_data)
+def create_trend_analysis(rfm_data):
+    # Create time-based trends if date column exists
+    if 'Purchase_Date' in rfm_data.columns:
+        rfm_data['Purchase_Date'] = pd.to_datetime(rfm_data['Purchase_Date'])
+        rfm_data['Month'] = rfm_data['Purchase_Date'].dt.to_period('M')
         
-        with st.expander(f"Cluster {cluster} - {tier}", expanded=False):
-            # Create insight visualization
-            fig = create_cluster_insight(
-                cluster, tier,
-                stats['Recency'], stats['Frequency'], stats['Monetary'],
-                rfm_data
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Business insights
-            st.markdown(f"""
-            <div class='cluster-card {tier_class}'>
-                <h4>📌 Customer Characteristics</h4>
-                <div class='metric-box'>
-                    <b>Recency:</b> {stats['Recency']:.1f} days ({(stats['Recency']/rfm_data['Recency'].mean()*100):.1f}% of average)
-                </div>
-                <div class='metric-box'>
-                    <b>Frequency:</b> {stats['Frequency']:.1f} purchases ({(stats['Frequency']/rfm_data['Frequency'].mean()*100):.1f}% of average)
-                </div>
-                <div class='metric-box'>
-                    <b>Monetary:</b> ${stats['Monetary']:,.2f} ({(stats['Monetary']/rfm_data['Monetary'].mean()*100):.1f}% of average)
-                </div>
-                
-                <h4>🎯 Recommended Actions</h4>
-                {get_recommendations(tier, stats, rfm_data)}
-            </div>
-            """, unsafe_allow_html=True)
-
-def get_recommendations(tier, stats, rfm_data):
-    if tier == "High Value":
-        return f"""
-        <ol>
-            <li><b>VIP Treatment:</b> Offer exclusive rewards for reaching ${stats['Monetary']*1.2:,.0f} quarterly spend</li>
-            <li><b>Retention Focus:</b> Personal outreach every {max(14, int(stats['Recency']/2))} days</li>
-            <li><b>Premium Upsell:</b> Recommend products 30-50% higher than current average spend</li>
-            <li><b>Feedback:</b> Invite to customer advisory board</li>
-        </ol>
-        """
-    elif tier == "Medium Value":
-        return f"""
-        <ol>
-            <li><b>Upsell Strategy:</b> Bundle products to increase average order by 20-30%</li>
-            <li><b>Engagement Boost:</b> Targeted emails every {max(7, int(stats['Recency']/3))} days</li>
-            <li><b>Loyalty Program:</b> Offer points for reaching ${stats['Monetary']*1.5:,.0f} quarterly spend</li>
-            <li><b>Feedback:</b> Survey to understand preferences</li>
-        </ol>
-        """
-    else:
-        return f"""
-        <ol>
-            <li><b>Win-Back Campaign:</b> Special discount after {int(stats['Recency']*1.2)} days inactivity</li>
-            <li><b>Low-Cost Entry:</b> Offer starter products under ${rfm_data['Monetary'].quantile(0.25):.2f}</li>
-            <li><b>Reactivation:</b> "We miss you" email after {int(stats['Recency']*1.5)} days</li>
-            <li><b>Survey:</b> Understand barriers to purchasing</li>
-        </ol>
-        """
+        monthly_data = rfm_data.groupby(['Month', 'Cluster']).agg({
+            'Recency': 'mean',
+            'Frequency': 'mean',
+            'Monetary': 'mean',
+            'Customer_ID': 'count'
+        }).reset_index()
+        monthly_data['Month'] = monthly_data['Month'].astype(str)
+        
+        fig = px.line(
+            monthly_data,
+            x='Month',
+            y='Monetary',
+            color='Cluster',
+            color_discrete_sequence=['#1a73e8', '#4285f4', '#8ab4f8'],
+            facet_col='Cluster',
+            facet_col_wrap=3,
+            title='Monthly Monetary Trends by Cluster',
+            labels={'Monetary': 'Average Spending ($)'}
+        )
+        fig.update_layout(
+            font=dict(color='black'),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+        return fig
+    return None
 
 def main():
-    st.title("📊 RFM Clustering Dashboard")
+    st.title("📈 Advanced RFM Analytics Dashboard")
     st.markdown("""
-    Customer segmentation using unsupervised learning (KMeans, BIRCH, GMM) based on RFM analysis.
-    """)
+    <style>
+        div[data-testid="stMarkdownContainer"] p {
+            color: black !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
     
     # Load data
     rfm_data, models = load_data()
@@ -312,40 +240,158 @@ def main():
         st.stop()
     
     # Sidebar controls
-    st.sidebar.header("Clustering Configuration")
+    st.sidebar.header("Configuration")
     algorithm = st.sidebar.selectbox(
-        "Select Algorithm",
+        "Algorithm",
         ["KMeans", "BIRCH", "GMM"],
         key='algorithm'
     )
     dimension = st.sidebar.selectbox(
-        "Select Dimensions",
+        "Dimensions",
         ["RF", "FM", "RFM"],
         key='dimension'
     )
+    cluster_col = f"{algorithm}_Cluster_{dimension}"
+    rfm_data['Cluster'] = rfm_data[cluster_col]  # Standardize column name
     
-    # Show analysis
-    show_cluster_analysis(rfm_data, algorithm, dimension)
+    # Overview section
+    st.header("🔍 Executive Summary")
+    
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Customers", len(rfm_data))
+    col2.metric("Total Clusters", rfm_data['Cluster'].nunique())
+    col3.metric("Total Revenue", f"${rfm_data['Monetary'].sum():,.2f}")
+    
+    # Cluster distribution
+    st.header("📊 Cluster Distribution")
+    cluster_counts = rfm_data['Cluster'].value_counts().sort_index()
+    
+    # Cluster overview pie chart
+    fig_pie = px.pie(
+        cluster_counts,
+        values=cluster_counts.values,
+        names=cluster_counts.index,
+        color=cluster_counts.index,
+        color_discrete_sequence=['#1a73e8', '#4285f4', '#8ab4f8'],
+        hole=0.3
+    )
+    fig_pie.update_layout(
+        title="Customer Distribution Across Clusters",
+        font=dict(color='black'),
+        showlegend=True
+    )
+    st.plotly_chart(fig_pie, use_container_width=True)
+    
+    # RFM 3D scatter plot
+    st.header("🌐 Customer Segmentation Overview")
+    fig_3d = px.scatter_3d(
+        rfm_data,
+        x='Recency',
+        y='Frequency',
+        z='Monetary',
+        color='Cluster',
+        color_discrete_sequence=['#1a73e8', '#4285f4', '#8ab4f8'],
+        opacity=0.7,
+        title='3D RFM Cluster Visualization'
+    )
+    fig_3d.update_layout(
+        font=dict(color='black'),
+        scene=dict(
+            xaxis_title='Recency (days)',
+            yaxis_title='Frequency',
+            zaxis_title='Monetary ($)'
+        )
+    )
+    st.plotly_chart(fig_3d, use_container_width=True)
+    
+    # Trend analysis (if date available)
+    trend_fig = create_trend_analysis(rfm_data)
+    if trend_fig:
+        st.header("📅 Time-Based Trends")
+        st.plotly_chart(trend_fig, use_container_width=True)
+    
+    # Cluster deep dive analysis
+    st.header("🔬 Cluster Deep Dive Analysis")
+    cluster_stats = rfm_data.groupby('Cluster').agg({
+        'Recency': 'mean',
+        'Frequency': 'mean',
+        'Monetary': ['mean', 'sum'],
+        'Customer_ID': 'count'
+    })
+    cluster_stats.columns = ['Recency', 'Frequency', 'Monetary', 'Total_Revenue', 'Count']
+    
+    for cluster in cluster_stats.index:
+        stats = cluster_stats.loc[cluster]
+        fig, tier, tier_color = create_comprehensive_analysis(cluster, stats, rfm_data)
+        
+        with st.expander(f"📌 Cluster {cluster} - {tier} (Size: {stats['Count']} customers)", expanded=False):
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Business insights
+            st.markdown(f"""
+            <div class='cluster-card'>
+                <h4 style='color: black;'>📋 Cluster {cluster} Characteristics</h4>
+                <div class='metric-box'>
+                    <b>Recency:</b> {stats['Recency']:.1f} days ({(stats['Recency']/rfm_data['Recency'].mean()*100):.1f}% of average)
+                </div>
+                <div class='metric-box'>
+                    <b>Frequency:</b> {stats['Frequency']:.1f} purchases ({(stats['Frequency']/rfm_data['Frequency'].mean()*100):.1f}% of average)
+                </div>
+                <div class='metric-box'>
+                    <b>Avg. Monetary:</b> ${stats['Monetary']:,.2f} ({(stats['Monetary']/rfm_data['Monetary'].mean()*100):.1f}% of average)
+                </div>
+                <div class='metric-box'>
+                    <b>Total Revenue:</b> ${stats['Total_Revenue']:,.2f} ({(stats['Total_Revenue']/rfm_data['Monetary'].sum()*100):.1f}% of total)
+                </div>
+                
+                <h4 style='color: black;'>🎯 Strategic Recommendations</h4>
+                {get_recommendations(tier, stats, rfm_data)}
+            </div>
+            """, unsafe_allow_html=True)
     
     # Data export
     st.sidebar.markdown("---")
-    st.sidebar.subheader("Export Data")
+    st.sidebar.header("Data Export")
     if st.sidebar.button("Download Cluster Data"):
         csv = rfm_data.to_csv(index=False).encode('utf-8')
         st.sidebar.download_button(
             label="Download as CSV",
             data=csv,
-            file_name="rfm_clusters.csv",
+            file_name="rfm_cluster_data.csv",
             mime="text/csv"
         )
-    
-    # Footer
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("""
-    **RFM Clustering Dashboard**  
-    *Unsupervised Learning Approach*  
-    Data last updated: {}
-    """.format(pd.to_datetime('today').strftime('%Y-%m-%d')))
+
+def get_recommendations(tier, stats, rfm_data):
+    if tier == "High Value":
+        return f"""
+        <ul style='color: black;'>
+            <li><b>VIP Program:</b> Create exclusive rewards for top {tier} customers (${stats['Monetary']:,.2f}+ spenders)</li>
+            <li><b>Retention Strategy:</b> Personal outreach every {max(14, int(stats['Recency']/2))} days</li>
+            <li><b>Premium Upsell:</b> Target with products 30-50% above current average spend</li>
+            <li><b>Advocacy:</b> Invite to beta test new products and provide testimonials</li>
+            <li><b>Loyalty:</b> Offer tiered benefits at ${stats['Monetary']*1.2:,.0f} quarterly spend level</li>
+        </ul>
+        """
+    elif tier == "Medium Value":
+        return f"""
+        <ul style='color: black;'>
+            <li><b>Upsell Strategy:</b> Bundle products to increase average order by 20-30%</li>
+            <li><b>Engagement:</b> Targeted emails every {max(7, int(stats['Recency']/3))} days</li>
+            <li><b>Loyalty:</b> Offer points for reaching ${stats['Monetary']*1.5:,.0f} quarterly spend</li>
+            <li><b>Feedback:</b> Conduct preference surveys to identify upgrade opportunities</li>
+            <li><b>Cross-sell:</b> Recommend complementary products based on purchase history</li>
+        </ul>
+        """
+    else:
+        return f"""
+        <ul style='color: black;'>
+            <li><b>Win-Back:</b> Special discount after {int(stats['Recency']*1.2)} days inactivity</li>
+            <li><b>Reactivation:</b> "We miss you" campaign after {int(stats['Recency']*1.5)} days</li>
+            <li><b>Entry-Level:</b> Promote starter products under ${rfm_data['Monetary'].quantile(0.25):.2f}</li>
+            <li><b>Survey:</b> Understand barriers to increased purchasing</li>
+            <li><b>Education:</b> Provide product usage guides and tutorials</li>
+        </ul>
+        """
 
 if __name__ == "__main__":
     main()
