@@ -116,11 +116,11 @@ def create_comprehensive_analysis(cluster_num, stats, rfm_data):
     fig.add_trace(go.Indicator(
         mode="number+gauge",
         value=stats['Monetary'],
-        number={'prefix': "$", 'font': {'size': 24, 'color': 'black'}},
-        title={'text': f"<b>Cluster {cluster_num}</b><br>{tier}", 'font': {'color': 'black'}},
+        number={'prefix': "$", 'font': {'size': 24, 'color': 'white'}},
+        title={'text': f"<b>Cluster {cluster_num}</b><br>{tier}", 'font': {'color': 'white'}},
         gauge={
             'shape': "bullet",
-            'axis': {'range': [0, rfm_data['Monetary'].max()*1.1], 'tickcolor': 'black'},
+            'axis': {'range': [0, rfm_data['Monetary'].max()*1.1], 'tickcolor': 'white'},
             'bar': {'color': tier_color},
             'bgcolor': 'white',
             'borderwidth': 2
