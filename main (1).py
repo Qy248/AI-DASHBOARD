@@ -225,7 +225,7 @@ def create_trend_analysis(rfm_data):
     return None
 
 def plot_clv_prediction(rfm_data):
-    rfm_data['CLV'] = (rfm_data['Monetary'] * rfm_data['Frequency']) / (1 + rfm_data['Churn Risk']) 
+    rfm_data['CLV'] = (rfm_data['Monetary'] * rfm_data['Frequency']) / (rfm_data['Recency'] + 1)  
     
     fig = px.box(rfm_data, x='Cluster', y='CLV', color='Cluster',
                  title='<b>Customer Lifetime Value by Cluster</b><br>Higher CLV = More Valuable Customers',
@@ -344,11 +344,14 @@ def main():
         st.plotly_chart(plot_segmentation_matrix(rfm_data), use_container_width=True)
 
     # Show overlapping customers
-    overlap_customers = rfm_data[
-        (rfm_data['Cluster'] == 'High') & 
-        (rfm_data['Recency'] < 30)
+     medium_value_active = rfm_data[
+        (rfm_data['Monetary'] >= medium_value_threshold) &
+        (rfm_data['Monetary'] < high_value_threshold) &
+        (rfm_data['Recency'] < 45)  # Slightly wider recency window
     ]
-    st.metric("High-Value Active Customers", len(overlap_customers))
+    st.metric("Medium-Value Active Customers (High Potential)", 
+              len(medium_value_active),
+              help="Customers in 50-75% spending tier with recent activity")
     
     trend_fig = create_trend_analysis(rfm_data)
     if trend_fig:
