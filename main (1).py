@@ -225,15 +225,21 @@ def create_trend_analysis(rfm_data):
     return None
 
 def plot_clv_prediction(rfm_data):
-    # Simple CLV estimation (Monetary * Frequency / Recency)
-    rfm_data['CLV'] = (rfm_data['Monetary'] * rfm_data['Frequency']) / (rfm_data['Recency'] + 1)
+    # Simple but effective CLV formula
+    rfm_data['CLV'] = (rfm_data['Monetary'] * rfm_data['Frequency']) / (rfm_data['Recency'] + 1)  # +1 to avoid division by zero
     
     fig = px.box(rfm_data, x='Cluster', y='CLV', color='Cluster',
-                 title='Customer Lifetime Value by Cluster',
+                 title='<b>Customer Lifetime Value by Cluster</b><br>Higher CLV = More Valuable Customers',
                  color_discrete_sequence=['#1a73e8', '#4285f4', '#8ab4f8'])
-    fig.update_layout(showlegend=False)
+    fig.update_layout(
+        yaxis_title="Estimated CLV ($)",
+        showlegend=False
+    )
     return fig
 
+# Add to your main() after the 3D scatter plot:
+st.header("💰 Customer Lifetime Value (CLV)")
+st.plotly_chart(plot_clv_prediction(rfm_data), use_container_width=True)
 
 def main():
     st.title("📈 Advanced RFM Analytics Dashboard")
@@ -315,7 +321,7 @@ def main():
     )
     st.plotly_chart(fig_3d, use_container_width=True)
 
-    st.header("💰 Customer Lifetime Value")
+    st.header("💰 Customer Lifetime Value (CLV)")
     st.plotly_chart(plot_clv_prediction(rfm_data), use_container_width=True)
     
     trend_fig = create_trend_analysis(rfm_data)
