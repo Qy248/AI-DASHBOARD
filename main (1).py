@@ -379,6 +379,8 @@ import streamlit as st
 
 import streamlit as st
 
+import streamlit as st
+
 def get_enhanced_recommendations(tier, stats, rfm_data):
     recency_days = int(stats['Recency'])
     monetary_value = stats['Monetary']
@@ -432,7 +434,6 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
         reactivation_days = int(recency_days * 1.5)
         entry_point = rfm_data['Monetary'].quantile(0.25)
         
-        # Display Win-Back Strategy
         result = f"""
         <div style='margin-top: 10px;'>
             <div style='background-color: #ffebee; padding: 12px; border-radius: 8px; margin-bottom: 10px;'>
@@ -447,7 +448,7 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
         """
 
         # Add Engagement Boost section using st.markdown
-        result += """
+        engagement_boost_html = """
         <div style='background-color: #fff8e1; padding: 12px; border-radius: 8px;'>
             <h4 style='color: #fb8c00; margin-top: 0;'>🔄 Engagement Boost</h4>
             <ul style='color: black;'>
@@ -457,9 +458,9 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
             </ul>
         </div>
         """
-        
+
         # Add Education & Support section using st.markdown
-        result += """
+        education_support_html = """
         <div style='background-color: #fce4ec; padding: 12px; border-radius: 8px;'>
             <h4 style='color: #e53935; margin-top: 0;'>📚 Education & Support</h4>
             <ul style='color: black;'>
@@ -469,9 +470,12 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
             </ul>
         </div>
         """
-        
+
         # Render the full HTML using st.markdown
         st.markdown(result, unsafe_allow_html=True)
+        st.markdown(engagement_boost_html, unsafe_allow_html=True)
+        st.markdown(education_support_html, unsafe_allow_html=True)
+
 
 
 
