@@ -224,6 +224,17 @@ def create_trend_analysis(rfm_data):
         return fig
     return None
 
+def plot_clv_prediction(rfm_data):
+    # Simple CLV estimation (Monetary * Frequency / Recency)
+    rfm_data['CLV'] = (rfm_data['Monetary'] * rfm_data['Frequency']) / (rfm_data['Recency'] + 1)
+    
+    fig = px.box(rfm_data, x='Cluster', y='CLV', color='Cluster',
+                 title='Customer Lifetime Value by Cluster',
+                 color_discrete_sequence=['#1a73e8', '#4285f4', '#8ab4f8'])
+    fig.update_layout(showlegend=False)
+    return fig
+
+
 def main():
     st.title("📈 Advanced RFM Analytics Dashboard")
     st.markdown("""
@@ -303,6 +314,9 @@ def main():
         )
     )
     st.plotly_chart(fig_3d, use_container_width=True)
+
+    st.header("💰 Customer Lifetime Value")
+    st.plotly_chart(plot_clv_prediction(rfm_data), use_container_width=True)
     
     trend_fig = create_trend_analysis(rfm_data)
     if trend_fig:
