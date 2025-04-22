@@ -237,9 +237,24 @@ def plot_clv_prediction(rfm_data):
     )
     return fig
 
-# Add to your main() after the 3D scatter plot:
-st.header("💰 Customer Lifetime Value (CLV)")
-st.plotly_chart(plot_clv_prediction(rfm_data), use_container_width=True)
+def plot_segmentation_matrix(rfm_data):
+    fig = px.scatter(
+        rfm_data, 
+        x='Recency', 
+        y='Monetary',
+        color='Cluster',
+        size='Frequency',
+        hover_data=['Customer ID'],
+        title='<b>Recency vs. Spending</b><br>Size = Purchase Frequency',
+        color_discrete_sequence=['#1a73e8', '#4285f4', '#8ab4f8']
+    )
+    fig.update_traces(marker=dict(opacity=0.7, line=dict(width=0.5, color='black')))
+    fig.update_layout(
+        xaxis_title="Recency (Days Since Last Purchase)",
+        yaxis_title="Total Spending ($)"
+    )
+    return fig
+
 
 def main():
     st.title("📈 Advanced RFM Analytics Dashboard")
@@ -323,6 +338,10 @@ def main():
 
     st.header("💰 Customer Lifetime Value (CLV)")
     st.plotly_chart(plot_clv_prediction(rfm_data), use_container_width=True)
+
+        
+    st.header("🔍 Customer Segmentation Matrix")
+    st.plotly_chart(plot_segmentation_matrix(rfm_data), use_container_width=True)
     
     trend_fig = create_trend_analysis(rfm_data)
     if trend_fig:
