@@ -201,7 +201,7 @@ def create_trend_analysis(rfm_data):
             'Recency': 'mean',
             'Frequency': 'mean',
             'Monetary': 'mean',
-            'Customer_ID': 'count'
+            'Customer ID': 'count'  # Changed to match your column name
         }).reset_index()
         monthly_data['Month'] = monthly_data['Month'].astype(str)
         
@@ -316,7 +316,7 @@ def main():
         'Recency': 'mean',
         'Frequency': 'mean',
         'Monetary': ['mean', 'sum'],
-        'Customer_ID': 'count'
+        'Customer ID': 'count'  # Changed to match your column name
     })
     cluster_stats.columns = ['Recency', 'Frequency', 'Monetary', 'Total_Revenue', 'Count']
     
