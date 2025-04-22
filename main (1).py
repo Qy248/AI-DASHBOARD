@@ -304,13 +304,11 @@ def main():
     )
     st.plotly_chart(fig_3d, use_container_width=True)
     
-    # Trend analysis (if date available)
-    trend_fig = create_trend_analysis(rfm_data)
+   trend_fig = create_trend_analysis(rfm_data)
     if trend_fig:
         st.header("📅 Time-Based Trends")
         st.plotly_chart(trend_fig, use_container_width=True)
     
-    # Cluster deep dive analysis
     st.header("🔬 Cluster Deep Dive Analysis")
     cluster_stats = rfm_data.groupby('Cluster').agg({
         'Recency': 'mean',
@@ -351,7 +349,7 @@ def main():
                 {get_enhanced_recommendations(tier, stats, rfm_data)}
             </div>
             """, unsafe_allow_html=True)
-    # Data export
+    
     st.sidebar.markdown("---")
     st.sidebar.header("Data Export")
     if st.sidebar.button("Download Cluster Data"):
@@ -447,5 +445,13 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
             </div>
         </div>
         """
+        
 if __name__ == "__main__":
     main()
+
+
+
+
+
+        
+
