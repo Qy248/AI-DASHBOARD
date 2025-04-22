@@ -226,7 +226,7 @@ def create_trend_analysis(rfm_data):
 
 def plot_clv_prediction(rfm_data):
     # Simple but effective CLV formula
-    rfm_data['CLV'] = (rfm_data['Monetary'] * rfm_data['Frequency']) / (rfm_data['Recency'] + 1)  # +1 to avoid division by zero
+   rfm_data['CLV'] = (rfm_data['Monetary'] * rfm_data['Frequency']) / (1 + rfm_data['Churn Risk']) 
     
     fig = px.box(rfm_data, x='Cluster', y='CLV', color='Cluster',
                  title='<b>Customer Lifetime Value by Cluster</b><br>Higher CLV = More Valuable Customers',
