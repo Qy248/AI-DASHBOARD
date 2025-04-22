@@ -344,8 +344,11 @@ def main():
                     <b>Total Revenue:</b> ${stats['Total_Revenue']:,.2f} ({(stats['Total_Revenue']/rfm_data['Monetary'].sum()*100):.1f}% of total)
                 </div>
                 
-                <h4 style='color: black;'>🎯 Strategic Recommendations</h4>
-                {get_recommendations(tier, stats, rfm_data)}
+                <h3 style='color: {tier_color}; border-bottom: 2px solid {tier_color}; padding-bottom: 8px;'>
+                    🎯 Recommended Engagement Strategy
+                </h3>
+                
+                {get_enhanced_recommendations(tier, stats, rfm_data)}
             </div>
             """, unsafe_allow_html=True)
     
@@ -361,37 +364,134 @@ def main():
             mime="text/csv"
         )
 
-def get_recommendations(tier, stats, rfm_data):
+# In your create_comprehensive_analysis function, modify the business insights section:
+
+with st.expander(f"📌 Cluster {cluster} - {tier} (Size: {stats['Count']} customers)", expanded=False):
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Business insights - Adjusted version
+    st.markdown(f"""
+    <div class='cluster-card'>
+        <h3 style='color: {tier_color}; border-bottom: 2px solid {tier_color}; padding-bottom: 8px;'>
+            Cluster {cluster} Profile: {tier} Customers
+        </h3>
+        
+        <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;'>
+            <div class='metric-box'>
+                <h4 style='color: {tier_color}; margin-top: 0;'>⏱ Recency</h4>
+                <p><b>{stats['Recency']:.1f} days</b><br>
+                <small>{get_comparison_arrow(stats['Recency'], rfm_data['Recency'].mean())} {(stats['Recency']/rfm_data['Recency'].mean()*100):.1f}% of average</small></p>
+            </div>
+            
+            <div class='metric-box'>
+                <h4 style='color: {tier_color}; margin-top: 0;'>🔄 Frequency</h4>
+                <p><b>{stats['Frequency']:.1f} purchases</b><br>
+                <small>{get_comparison_arrow(stats['Frequency'], rfm_data['Frequency'].mean())} {(stats['Frequency']/rfm_data['Frequency'].mean()*100):.1f}% of average</small></p>
+            </div>
+            
+            <div class='metric-box'>
+                <h4 style='color: {tier_color}; margin-top: 0;'>💰 Avg. Value</h4>
+                <p><b>${stats['Monetary']:,.2f}</b><br>
+                <small>{get_comparison_arrow(stats['Monetary'], rfm_data['Monetary'].mean())} {(stats['Monetary']/rfm_data['Monetary'].mean()*100):.1f}% of average</small></p>
+            </div>
+            
+            <div class='metric-box'>
+                <h4 style='color: {tier_color}; margin-top: 0;'>💵 Total Revenue</h4>
+                <p><b>${stats['Total_Revenue']:,.2f}</b><br>
+                <small>{get_comparison_arrow(stats['Total_Revenue'], rfm_data['Monetary'].sum())} {(stats['Total_Revenue']/rfm_data['Monetary'].sum()*100):.1f}% of total</small></p>
+            </div>
+        </div>
+        
+        <h3 style='color: {tier_color}; border-bottom: 2px solid {tier_color}; padding-bottom: 8px;'>
+            🎯 Recommended Engagement Strategy
+        </h3>
+        
+        {get_enhanced_recommendations(tier, stats, rfm_data)}
+    </div>
+    """, unsafe_allow_html=True)
+
+# Add these helper functions
+def get_comparison_arrow(value, average):
+    if value > average:
+        return "↑ Above average"
+    elif value < average:
+        return "↓ Below average"
+    else:
+        return "→ At average"
+
+def get_enhanced_recommendations(tier, stats, rfm_data):
+    recency_days = int(stats['Recency'])
+    monetary_value = stats['Monetary']
+    
     if tier == "High Value":
         return f"""
-        <ul style='color: black;'>
-            <li><b>VIP Program:</b> Create exclusive rewards for top {tier} customers (${stats['Monetary']:,.2f}+ spenders)</li>
-            <li><b>Retention Strategy:</b> Personal outreach every {max(14, int(stats['Recency']/2))} days</li>
-            <li><b>Premium Upsell:</b> Target with products 30-50% above current average spend</li>
-            <li><b>Advocacy:</b> Invite to beta test new products and provide testimonials</li>
-            <li><b>Loyalty:</b> Offer tiered benefits at ${stats['Monetary']*1.2:,.0f} quarterly spend level</li>
-        </ul>
+        <div style='margin-top: 10px;'>
+            <div style='background-color: #e6f7ff; padding: 12px; border-radius: 8px; margin-bottom: 10px;'>
+                <h4 style='color: #1a73e8; margin-top: 0;'>💎 VIP Retention Strategy</h4>
+                <ul style='color: black;'>
+                    <li><b>Exclusive Access:</b> Invite to VIP program (Top {tier} customers spending ${monetary_value:,.2f}+)</li>
+                    <li><b>Personal Outreach:</b> Dedicated account manager with quarterly business reviews</li>
+                    <li><b>Tiered Benefits:</b> Unlock premium features at ${monetary_value*1.2:,.0f} annual spend</li>
+                </ul>
+            </div>
+            
+            <div style='background-color: #f0f7ff; padding: 12px; border-radius: 8px;'>
+                <h4 style='color: #1a73e8; margin-top: 0;'>🚀 Growth Opportunities</h4>
+                <ul style='color: black;'>
+                    <li><b>Premium Upsell:</b> Target with enterprise solutions 30-50% above current spend</li>
+                    <li><b>Advocacy Program:</b> Enroll in customer reference program with incentives</li>
+                    <li><b>Cross-Sell:</b> Recommend complementary premium services</li>
+                </ul>
+            </div>
+        </div>
         """
     elif tier == "Medium Value":
         return f"""
-        <ul style='color: black;'>
-            <li><b>Upsell Strategy:</b> Bundle products to increase average order by 20-30%</li>
-            <li><b>Engagement:</b> Targeted emails every {max(7, int(stats['Recency']/3))} days</li>
-            <li><b>Loyalty:</b> Offer points for reaching ${stats['Monetary']*1.5:,.0f} quarterly spend</li>
-            <li><b>Feedback:</b> Conduct preference surveys to identify upgrade opportunities</li>
-            <li><b>Cross-sell:</b> Recommend complementary products based on purchase history</li>
-        </ul>
+        <div style='margin-top: 10px;'>
+            <div style='background-color: #fff3e0; padding: 12px; border-radius: 8px; margin-bottom: 10px;'>
+                <h4 style='color: #fb8c00; margin-top: 0;'>📈 Value Optimization</h4>
+                <ul style='color: black;'>
+                    <li><b>Smart Bundling:</b> Create packages to increase average order by 20-30%</li>
+                    <li><b>Loyalty Program:</b> Earn points for reaching ${monetary_value*1.5:,.0f} quarterly spend</li>
+                    <li><b>Personalized Content:</b> Send targeted case studies every {max(7, int(recency_days/3))} days</li>
+                </ul>
+            </div>
+            
+            <div style='background-color: #fff8e1; padding: 12px; border-radius: 8px;'>
+                <h4 style='color: #fb8c00; margin-top: 0;'>🔄 Engagement Boost</h4>
+                <ul style='color: black;'>
+                    <li><b>Usage Tips:</b> Share best practices to increase product adoption</li>
+                    <li><b>Feedback Sessions:</b> Schedule quarterly check-ins to understand needs</li>
+                    <li><b>Limited Offers:</b> Provide time-sensitive upgrades</li>
+                </ul>
+            </div>
+        </div>
         """
     else:
+        winback_days = int(recency_days * 1.2)
+        reactivation_days = int(recency_days * 1.5)
+        entry_point = rfm_data['Monetary'].quantile(0.25)
+        
         return f"""
-        <ul style='color: black;'>
-            <li><b>Win-Back:</b> Special discount after {int(stats['Recency']*1.2)} days inactivity</li>
-            <li><b>Reactivation:</b> "We miss you" campaign after {int(stats['Recency']*1.5)} days</li>
-            <li><b>Entry-Level:</b> Promote starter products under ${rfm_data['Monetary'].quantile(0.25):.2f}</li>
-            <li><b>Survey:</b> Understand barriers to increased purchasing</li>
-            <li><b>Education:</b> Provide product usage guides and tutorials</li>
-        </ul>
+        <div style='margin-top: 10px;'>
+            <div style='background-color: #ffebee; padding: 12px; border-radius: 8px; margin-bottom: 10px;'>
+                <h4 style='color: #e53935; margin-top: 0;'>🔙 Win-Back Strategy</h4>
+                <ul style='color: black;'>
+                    <li><b>Special Offer:</b> {winback_days}-day reactivation discount</li>
+                    <li><b>Re-engagement:</b> "We've missed you" campaign after {reactivation_days} days</li>
+                    <li><b>Low-Risk Entry:</b> Starter products under ${entry_point:,.2f}</li>
+                </ul>
+            </div>
+            
+            <div style='background-color: #fce4ec; padding: 12px; border-radius: 8px;'>
+                <h4 style='color: #e53935; margin-top: 0;'>📚 Education & Support</h4>
+                <ul style='color: black;'>
+                    <li><b>Onboarding:</b> Free setup assistance and training</li>
+                    <li><b>Resource Center:</b> Curated how-to guides and tutorials</li>
+                    <li><b>Survey:</b> Identify barriers to increased usage</li>
+                </ul>
+            </div>
+        </div>
         """
-
 if __name__ == "__main__":
     main()
