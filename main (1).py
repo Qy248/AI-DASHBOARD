@@ -91,7 +91,7 @@ def create_cluster_insight(cluster_num, value_tier, recency, frequency, monetary
     }
     tier_color = color_map.get(value_tier, '#3498db')
     
-    # Create subplots
+    # Create figure with subplots
     fig = make_subplots(
         rows=1, cols=2,
         specs=[[{'type': 'indicator'}, {'type': 'xy'}]],
@@ -123,15 +123,42 @@ def create_cluster_insight(cluster_num, value_tier, recency, frequency, monetary
         textposition='auto'
     ), row=1, col=2)
     
-    # Add reference lines
-    for i, metric in enumerate(['Recency', 'Frequency', 'Monetary']):
-        fig.add_hline(
-            y=rfm_data[metric].mean(),
-            line_dash="dot",
-            annotation_text="Avg" if i == 0 else None,
-            annotation_position="top right",
-            row=1, col=2
-        )
+    # Add reference lines using shapes instead of add_hline
+    avg_recency = rfm_data['Recency'].mean()
+    avg_frequency = rfm_data['Frequency'].mean()
+    avg_monetary = rfm_data['Monetary'].mean()
+    
+    fig.add_shape(
+        type="line",
+        x0=-0.5, x1=2.5,
+        y0=avg_recency, y1=avg_recency,
+        line=dict(color="gray", dash="dot"),
+        row=1, col=2
+    )
+    
+    fig.add_shape(
+        type="line",
+        x0=-0.5, x1=2.5,
+        y0=avg_frequency, y1=avg_frequency,
+        line=dict(color="gray", dash="dot"),
+        row=1, col=2
+    )
+    
+    fig.add_shape(
+        type="line",
+        x0=-0.5, x1=2.5,
+        y0=avg_monetary, y1=avg_monetary,
+        line=dict(color="gray", dash="dot"),
+        row=1, col=2
+    )
+    
+    # Add annotation only for the first line
+    fig.add_annotation(
+        x=0, y=avg_recency*1.05,
+        text="Dataset Average",
+        showarrow=False,
+        row=1, col=2
+    )
     
     # Update layout
     fig.update_layout(
