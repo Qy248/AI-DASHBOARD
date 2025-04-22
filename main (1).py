@@ -335,12 +335,6 @@ def main():
         )
     )
     st.plotly_chart(fig_3d, use_container_width=True)
-
-    st.header("💰 Customer Lifetime Value (CLV)")
-    st.plotly_chart(plot_clv_prediction(rfm_data), use_container_width=True)
-
-    st.header("🔍 Customer Segmentation Matrix")
-    st.plotly_chart(plot_segmentation_matrix(rfm_data), use_container_width=True)
     
     st.header("🎯 Combined CLV + Matrix Insights")
     
