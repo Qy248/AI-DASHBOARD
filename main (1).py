@@ -379,78 +379,120 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
     recency_days = int(stats['Recency'])
     monetary_value = stats['Monetary']
     
-    if tier == "High Value":
-        return f"""
-        <div style='margin-top: 10px;'>
-            <div style='background-color: #e6f7ff; padding: 12px; border-radius: 8px; margin-bottom: 10px;'>
-                <h4 style='color: #1a73e8; margin-top: 0;'>💎 VIP Retention Strategy</h4>
-                <ul style='color: black;'>
-                    <li><b>Exclusive Access:</b> Invite to VIP program (Top {tier} customers spending ${monetary_value:,.2f}+)</li>
-                    <li><b>Personal Outreach:</b> Dedicated account manager with quarterly business reviews</li>
-                    <li><b>Tiered Benefits:</b> Unlock premium features at ${monetary_value*1.2:,.0f} annual spend</li>
-                </ul>
-            </div>
-            
-            <div style='background-color: #f0f7ff; padding: 12px; border-radius: 8px;'>
-                <h4 style='color: #1a73e8; margin-top: 0;'>🚀 Growth Opportunities</h4>
-                <ul style='color: black;'>
-                    <li><b>Premium Upsell:</b> Target with enterprise solutions 30-50% above current spend</li>
-                    <li><b>Advocacy Program:</b> Enroll in customer reference program with incentives</li>
-                    <li><b>Cross-Sell:</b> Recommend complementary premium services</li>
-                </ul>
-            </div>
+    # Define common styles and components
+    styles = {
+        "container": "margin-top: 10px;",
+        "section": "padding: 12px; border-radius: 8px; margin-bottom: 10px;",
+        "h4": "margin-top: 0;",
+        "ul": "color: black;"
+    }
+    
+    # Define all possible sections
+    sections = {
+        "high_value": {
+            "color": "#1a73e8",
+            "sections": [
+                {
+                    "title": "💎 VIP Retention Strategy",
+                    "items": [
+                        f"<b>Exclusive Access:</b> Invite to VIP program (Top {tier} customers spending ${monetary_value:,.2f}+)",
+                        "<b>Personal Outreach:</b> Dedicated account manager with quarterly business reviews",
+                        f"<b>Tiered Benefits:</b> Unlock premium features at ${monetary_value*1.2:,.0f} annual spend"
+                    ],
+                    "bg_color": "#e6f7ff"
+                },
+                {
+                    "title": "🚀 Growth Opportunities",
+                    "items": [
+                        "<b>Premium Upsell:</b> Target with enterprise solutions 30-50% above current spend",
+                        "<b>Advocacy Program:</b> Enroll in customer reference program with incentives",
+                        "<b>Cross-Sell:</b> Recommend complementary premium services"
+                    ],
+                    "bg_color": "#f0f7ff"
+                }
+            ]
+        },
+        "medium_value": {
+            "color": "#fb8c00",
+            "sections": [
+                {
+                    "title": "📈 Value Optimization",
+                    "items": [
+                        "<b>Smart Bundling:</b> Create packages to increase average order by 20-30%",
+                        f"<b>Loyalty Program:</b> Earn points for reaching ${monetary_value*1.5:,.0f} quarterly spend",
+                        f"<b>Personalized Content:</b> Send targeted case studies every {max(7, int(recency_days/3))} days"
+                    ],
+                    "bg_color": "#fff3e0"
+                },
+                {
+                    "title": "🔄 Engagement Boost",
+                    "items": [
+                        "<b>Usage Tips:</b> Share best practices to increase product adoption",
+                        "<b>Feedback Sessions:</b> Schedule quarterly check-ins to understand needs",
+                        "<b>Limited Offers:</b> Provide time-sensitive upgrades"
+                    ],
+                    "bg_color": "#fff8e1"
+                }
+            ]
+        },
+        "low_value": {
+            "color": "#e53935",
+            "sections": [
+                {
+                    "title": "🔙 Win-Back Strategy",
+                    "items": [
+                        f"<b>Special Offer:</b> {int(recency_days * 1.2)}-day reactivation discount",
+                        f"<b>Re-engagement:</b> 'We've missed you' campaign after {int(recency_days * 1.5)} days",
+                        f"<b>Low-Risk Entry:</b> Starter products under ${rfm_data['Monetary'].quantile(0.25):,.2f}"
+                    ],
+                    "bg_color": "#ffebee"
+                },
+                {
+                    "title": "🔄 Engagement Boost",
+                    "items": [
+                        "<b>Usage Tips:</b> Share best practices to increase product adoption",
+                        "<b>Feedback Sessions:</b> Schedule quarterly check-ins to understand needs",
+                        "<b>Limited Offers:</b> Provide time-sensitive upgrades"
+                    ],
+                    "bg_color": "#fff8e1"
+                },
+                {
+                    "title": "📚 Education & Support",
+                    "items": [
+                        "<b>Onboarding:</b> Free setup assistance and training",
+                        "<b>Resource Center:</b> Curated how-to guides and tutorials",
+                        "<b>Survey:</b> Identify barriers to increased usage"
+                    ],
+                    "bg_color": "#fce4ec"
+                }
+            ]
+        }
+    }
+    
+    # Select the appropriate tier
+    tier_data = {
+        "High Value": sections["high_value"],
+        "Medium Value": sections["medium_value"],
+        "Low Value": sections["low_value"]
+    }[tier]
+    
+    # Build the HTML
+    html_parts = [f"<div style='{styles['container']}'>"]
+    
+    for section in tier_data["sections"]:
+        section_html = f"""
+        <div style='background-color: {section['bg_color']}; {styles['section']}'>
+            <h4 style='color: {tier_data['color']}; {styles['h4']}'>{section['title']}</h4>
+            <ul style='{styles['ul']}'>
+                {''.join(f'<li>{item}</li>' for item in section['items'])}
+            </ul>
         </div>
         """
-    elif tier == "Medium Value":
-        return f"""
-        <div style='margin-top: 10px;'>
-            <div style='background-color: #fff3e0; padding: 12px; border-radius: 8px; margin-bottom: 10px;'>
-                <h4 style='color: #fb8c00; margin-top: 0;'>📈 Value Optimization</h4>
-                <ul style='color: black;'>
-                    <li><b>Smart Bundling:</b> Create packages to increase average order by 20-30%</li>
-                    <li><b>Loyalty Program:</b> Earn points for reaching ${monetary_value*1.5:,.0f} quarterly spend</li>
-                    <li><b>Personalized Content:</b> Send targeted case studies every {max(7, int(recency_days/3))} days</li>
-                </ul>
-            </div>
-            
-           st.markdown("""
-                <div style='background-color: #fff8e1; padding: 12px; border-radius: 8px;'>
-                    <h4 style='color: #fb8c00; margin-top: 0;'>🔄 Engagement Boost</h4>
-                    <ul style='color: black;'>
-                        <li><b>Usage Tips:</b> Share best practices to increase product adoption</li>
-                        <li><b>Feedback Sessions:</b> Schedule quarterly check-ins to understand needs</li>
-                        <li><b>Limited Offers:</b> Provide time-sensitive upgrades</li>
-                    </ul>
-                </div>
-                """, unsafe_allow_html=True)
-        </div>
-        """
-    else:
-        winback_days = int(recency_days * 1.2)
-        reactivation_days = int(recency_days * 1.5)
-        entry_point = rfm_data['Monetary'].quantile(0.25)
-        
-        return f"""
-        <div style='margin-top: 10px;'>
-            <div style='background-color: #ffebee; padding: 12px; border-radius: 8px; margin-bottom: 10px;'>
-                <h4 style='color: #e53935; margin-top: 0;'>🔙 Win-Back Strategy</h4>
-                <ul style='color: black;'>
-                    <li><b>Special Offer:</b> {winback_days}-day reactivation discount</li>
-                    <li><b>Re-engagement:</b> "We've missed you" campaign after {reactivation_days} days</li>
-                    <li><b>Low-Risk Entry:</b> Starter products under ${entry_point:,.2f}</li>
-                </ul>
-            </div>
-            
-            <div style='background-color: #fce4ec; padding: 12px; border-radius: 8px;'>
-                <h4 style='color: #e53935; margin-top: 0;'>📚 Education & Support</h4>
-                <ul style='color: black;'>
-                    <li><b>Onboarding:</b> Free setup assistance and training</li>
-                    <li><b>Resource Center:</b> Curated how-to guides and tutorials</li>
-                    <li><b>Survey:</b> Identify barriers to increased usage</li>
-                </ul>
-            </div>
-        </div>
-        """
+        html_parts.append(section_html)
+    
+    html_parts.append("</div>")
+    
+    return "".join(html_parts)
 
 
 if __name__ == "__main__":
