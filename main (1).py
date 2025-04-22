@@ -377,6 +377,8 @@ def get_comparison_arrow(value, average):
 
 import streamlit as st
 
+import streamlit as st
+
 def get_enhanced_recommendations(tier, stats, rfm_data):
     recency_days = int(stats['Recency'])
     monetary_value = stats['Monetary']
@@ -444,6 +446,18 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
         </div>
         """
 
+        # Add Engagement Boost section using st.markdown
+        result += """
+        <div style='background-color: #fff8e1; padding: 12px; border-radius: 8px;'>
+            <h4 style='color: #fb8c00; margin-top: 0;'>🔄 Engagement Boost</h4>
+            <ul style='color: black;'>
+                <li><b>Usage Tips:</b> Share best practices to increase product adoption</li>
+                <li><b>Feedback Sessions:</b> Schedule quarterly check-ins to understand needs</li>
+                <li><b>Limited Offers:</b> Provide time-sensitive upgrades</li>
+            </ul>
+        </div>
+        """
+        
         # Add Education & Support section using st.markdown
         result += """
         <div style='background-color: #fce4ec; padding: 12px; border-radius: 8px;'>
@@ -455,8 +469,10 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
             </ul>
         </div>
         """
+        
         # Render the full HTML using st.markdown
         st.markdown(result, unsafe_allow_html=True)
+
 
 
 if __name__ == "__main__":
