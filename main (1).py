@@ -304,7 +304,7 @@ def main():
     )
     st.plotly_chart(fig_3d, use_container_width=True)
     
-   trend_fig = create_trend_analysis(rfm_data)
+    trend_fig = create_trend_analysis(rfm_data)
     if trend_fig:
         st.header("📅 Time-Based Trends")
         st.plotly_chart(trend_fig, use_container_width=True)
