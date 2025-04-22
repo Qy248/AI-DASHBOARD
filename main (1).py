@@ -37,10 +37,10 @@ st.markdown("""
         color: #000000;
     }
     .st-b7, .st-bb, .st-c0, .st-c1, .st-c2 {
-        color: #000000 !important;
+        color: #FFFFFF !important;
     }
     h1, h2, h3, h4, h5, h6 {
-        color: #000000 !important;
+        color: #FFFFFF !important;
     }
     .stButton>button {
         background-color: #1a73e8;
