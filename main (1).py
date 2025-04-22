@@ -413,14 +413,16 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
                 </ul>
             </div>
             
-            <div style='background-color: #fff8e1; padding: 12px; border-radius: 8px;'>
-                <h4 style='color: #fb8c00; margin-top: 0;'>🔄 Engagement Boost</h4>
-                <ul style='color: black;'>
-                    <li><b>Usage Tips:</b> Share best practices to increase product adoption</li>
-                    <li><b>Feedback Sessions:</b> Schedule quarterly check-ins to understand needs</li>
-                    <li><b>Limited Offers:</b> Provide time-sensitive upgrades</li>
-                </ul>
-            </div>
+           st.markdown("""
+                <div style='background-color: #fff8e1; padding: 12px; border-radius: 8px;'>
+                    <h4 style='color: #fb8c00; margin-top: 0;'>🔄 Engagement Boost</h4>
+                    <ul style='color: black;'>
+                        <li><b>Usage Tips:</b> Share best practices to increase product adoption</li>
+                        <li><b>Feedback Sessions:</b> Schedule quarterly check-ins to understand needs</li>
+                        <li><b>Limited Offers:</b> Provide time-sensitive upgrades</li>
+                    </ul>
+                </div>
+                """, unsafe_allow_html=True)
         </div>
         """
     else:
@@ -436,15 +438,6 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
                     <li><b>Special Offer:</b> {winback_days}-day reactivation discount</li>
                     <li><b>Re-engagement:</b> "We've missed you" campaign after {reactivation_days} days</li>
                     <li><b>Low-Risk Entry:</b> Starter products under ${entry_point:,.2f}</li>
-                </ul>
-            </div>
-            
-            <div style='background-color: #fff8e1; padding: 12px; border-radius: 8px; margin-bottom: 10px;'>
-                <h4 style='color: #fb8c00; margin-top: 0;'>🔄 Engagement Boost</h4>
-                <ul style='color: black;'>
-                    <li><b>Usage Tips:</b> Share best practices to increase product adoption</li>
-                    <li><b>Feedback Sessions:</b> Schedule quarterly check-ins to understand needs</li>
-                    <li><b>Limited Offers:</b> Provide time-sensitive upgrades</li>
                 </ul>
             </div>
             
