@@ -351,7 +351,6 @@ def main():
                 {get_enhanced_recommendations(tier, stats, rfm_data)}
             </div>
             """, unsafe_allow_html=True)
-    
     # Data export
     st.sidebar.markdown("---")
     st.sidebar.header("Data Export")
@@ -364,51 +363,6 @@ def main():
             mime="text/csv"
         )
 
-# In your create_comprehensive_analysis function, modify the business insights section:
-
-with st.expander(f"📌 Cluster {cluster} - {tier} (Size: {stats['Count']} customers)", expanded=False):
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Business insights - Adjusted version
-    st.markdown(f"""
-    <div class='cluster-card'>
-        <h3 style='color: {tier_color}; border-bottom: 2px solid {tier_color}; padding-bottom: 8px;'>
-            Cluster {cluster} Profile: {tier} Customers
-        </h3>
-        
-        <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;'>
-            <div class='metric-box'>
-                <h4 style='color: {tier_color}; margin-top: 0;'>⏱ Recency</h4>
-                <p><b>{stats['Recency']:.1f} days</b><br>
-                <small>{get_comparison_arrow(stats['Recency'], rfm_data['Recency'].mean())} {(stats['Recency']/rfm_data['Recency'].mean()*100):.1f}% of average</small></p>
-            </div>
-            
-            <div class='metric-box'>
-                <h4 style='color: {tier_color}; margin-top: 0;'>🔄 Frequency</h4>
-                <p><b>{stats['Frequency']:.1f} purchases</b><br>
-                <small>{get_comparison_arrow(stats['Frequency'], rfm_data['Frequency'].mean())} {(stats['Frequency']/rfm_data['Frequency'].mean()*100):.1f}% of average</small></p>
-            </div>
-            
-            <div class='metric-box'>
-                <h4 style='color: {tier_color}; margin-top: 0;'>💰 Avg. Value</h4>
-                <p><b>${stats['Monetary']:,.2f}</b><br>
-                <small>{get_comparison_arrow(stats['Monetary'], rfm_data['Monetary'].mean())} {(stats['Monetary']/rfm_data['Monetary'].mean()*100):.1f}% of average</small></p>
-            </div>
-            
-            <div class='metric-box'>
-                <h4 style='color: {tier_color}; margin-top: 0;'>💵 Total Revenue</h4>
-                <p><b>${stats['Total_Revenue']:,.2f}</b><br>
-                <small>{get_comparison_arrow(stats['Total_Revenue'], rfm_data['Monetary'].sum())} {(stats['Total_Revenue']/rfm_data['Monetary'].sum()*100):.1f}% of total</small></p>
-            </div>
-        </div>
-        
-        <h3 style='color: {tier_color}; border-bottom: 2px solid {tier_color}; padding-bottom: 8px;'>
-            🎯 Recommended Engagement Strategy
-        </h3>
-        
-        {get_enhanced_recommendations(tier, stats, rfm_data)}
-    </div>
-    """, unsafe_allow_html=True)
 
 # Add these helper functions
 def get_comparison_arrow(value, average):
