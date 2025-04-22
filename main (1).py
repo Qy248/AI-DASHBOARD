@@ -343,7 +343,7 @@ def main():
                 </div>
                 st.markdown("""
                     <h3 style='color: {tier_color}; border-bottom: 2px solid {tier_color}; padding-bottom: 8px;'>
-                        🎯 Recommended Engagement Strategy
+                        Recommended Engagement Strategy
                     </h3>
                 
                     {get_enhanced_recommendations(tier, stats, rfm_data)}
