@@ -342,18 +342,6 @@ def main():
         st.plotly_chart(plot_clv_prediction(rfm_data), use_container_width=True)
     with col2:
         st.plotly_chart(plot_segmentation_matrix(rfm_data), use_container_width=True)
-    high_value_threshold = rfm_data['Monetary'].quantile(0.75)
-    medium_value_threshold = rfm_data['Monetary'].quantile(0.5) 
-    # Show overlapping customers
-    medium_value_active = rfm_data[
-        (rfm_data['Monetary'] >= medium_value_threshold) &
-        (rfm_data['Monetary'] < high_value_threshold) &
-        (rfm_data['Recency'] < 45)  # Slightly wider recency window
-    ]
-    
-    st.metric("Medium-Value Active Customers (High Potential)", 
-              len(medium_value_active),
-              help="Customers in 50-75% spending tier with recent activity")
     
     trend_fig = create_trend_analysis(rfm_data)
     if trend_fig:
