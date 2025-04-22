@@ -1,178 +1,216 @@
 import streamlit as st
+import joblib
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
-from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
-import joblib
+from sklearn.preprocessing import StandardScaler
+import plotly.express as px
+import plotly.graph_objects as go
 
-# Page config
+# Set page config
 st.set_page_config(
-    page_title='Customer Segmentation',
-    page_icon=':bar_chart:',
-    layout='wide'
+    page_title="RFM Clustering Dashboard",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# --- Load data and models ---
-@st.cache_resource
-def load_data_models():
-    # Models
+# Load data and models
+@st.cache_data
+def load_data():
+    rfm_data = joblib.load("rfm_data_original.joblib")
     models = {
-        "KMeans": {
-            "RF": joblib.load("final_kmeans_RF_model.joblib"),
-            "FM": joblib.load("final_kmeans_FM_model.joblib"),
-            "RFM": joblib.load("final_kmeans_RFM_model.joblib"),
+        'KMeans': {
+            'RF': joblib.load("KMeans_RF_model.joblib"),
+            'FM': joblib.load("KMeans_FM_model.joblib"),
+            'RFM': joblib.load("KMeans_RFM_model.joblib")
         },
-        "GMM": {
-            "RF": joblib.load("GMM_RF_model.joblib"),
-            "FM": joblib.load("GMM_FM_model.joblib"),
-            "RFM": joblib.load("GMM_RFM_model.joblib"),
+        'BIRCH': {
+            'RF': joblib.load("BIRCH_RF_model.joblib"),
+            'FM': joblib.load("BIRCH_FM_model.joblib"),
+            'RFM': joblib.load("BIRCH_RFM_model.joblib")
         },
-        "BIRCH": {
-            "RF": joblib.load("BIRCH_RF_model.joblib"),
-            "FM": joblib.load("BIRCH_FM_model.joblib"),
-            "RFM": joblib.load("BIRCH_RFM_model.joblib"),
+        'GMM': {
+            'RF': joblib.load("GMM_RF_model.joblib"),
+            'FM': joblib.load("GMM_FM_model.joblib"),
+            'RFM': joblib.load("GMM_RFM_model.joblib")
         }
     }
+    return rfm_data, models
 
-    # DataFrames
-    dataframes = {
-        "KMeans": {
-            "RF": joblib.load("rfm_data_RF_with_cluster.joblib"),
-            "FM": joblib.load("rfm_data_FM_with_cluster.joblib"),
-            "RFM": joblib.load("rfm_data_RFM_with_cluster.joblib"),
-        },
-        "GMM": {
-            "RF": joblib.load("rfm_data_GMM_RF_clusters.joblib"),
-            "FM": joblib.load("rfm_data_GMM_FM_clusters.joblib"),
-            "RFM": joblib.load("rfm_data_GMM_RFM_clusters.joblib"),
-        },
-        "BIRCH": {
-            "RF": joblib.load("rfm_data_RF_clusters.joblib"),
-            "FM": joblib.load("rfm_data_FM_clusters.joblib"),
-            "RFM": joblib.load("rfm_data_RFM_clusters.joblib"),
-        }
-    }
+rfm_data, models = load_data()
 
-    # Scaler
-    scaler = joblib.load("rfm_scaler.joblib")
-    return models, dataframes, scaler
+# Sidebar controls
+st.sidebar.header("Dashboard Controls")
+algorithm = st.sidebar.selectbox("Select Algorithm", ["KMeans", "BIRCH", "GMM"])
+dimension = st.sidebar.selectbox("Select Dimension", ["RF", "FM", "RFM"])
+cluster_to_analyze = st.sidebar.selectbox("Select Cluster to Analyze", sorted(rfm_data[f"{algorithm}_Cluster_{dimension}"].unique()))
 
-# --- Plotting ---
-def plot_clusters(df, cluster_col, x_col, y_col, title):
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.scatterplot(data=df, x=x_col, y=y_col, hue=cluster_col, palette="Set2", ax=ax)
-    ax.set_title(title)
-    st.pyplot(fig)
+# Main dashboard
+st.title("📊 RFM Clustering Analysis Dashboard")
+st.markdown("""
+This dashboard visualizes customer segmentation using RFM (Recency, Frequency, Monetary) analysis 
+with different clustering algorithms.
+""")
 
-# --- Main app ---
-def main():
-    st.title("Customer Segmentation Dashboard")
+# Metrics row
+st.subheader("📈 Overall Statistics")
+col1, col2, col3 = st.columns(3)
+col1.metric("Total Customers", len(rfm_data))
+col2.metric(f"Clusters in {algorithm}-{dimension}", rfm_data[f"{algorithm}_Cluster_{dimension}"].nunique())
+col3.metric("Avg. Monetary Value", f"${rfm_data['Monetary'].mean():,.2f}")
 
-    # Load data and models
-    kmeans_df, gmm_df, birch_df, kmeans_model, gmm_model, birch_model, scaler = load_all_data()
+# Cluster distribution
+st.subheader("🔢 Cluster Distribution")
+fig1 = px.pie(
+    rfm_data, 
+    names=f"{algorithm}_Cluster_{dimension}",
+    title=f"Cluster Distribution ({algorithm}-{dimension})"
+)
+st.plotly_chart(fig1, use_container_width=True)
 
-    # Sidebar model selector
-    st.sidebar.header("Select a Clustering Model")
-    model_choice = st.sidebar.selectbox("Model", ["KMeans", "GMM", "BIRCH"])
+# RFM plots
+st.subheader("📊 RFM Cluster Visualization")
 
-    # Get data based on model selection
-    if model_choice == "KMeans":
-        df = kmeans_df.copy()
-        model = kmeans_model
-        cluster_col = "KMeans_Cluster"
-    elif model_choice == "GMM":
-        df = gmm_df.copy()
-        model = gmm_model
-        cluster_col = "GMM_Cluster"
-    else:
-        df = birch_df.copy()
-        model = birch_model
-        cluster_col = "BIRCH_Cluster"
-
-    # Sample Data
-    st.markdown(f"### Sample Data ({model_choice})")
-    st.dataframe(df.head())
-
-    today = datetime(2023, 9, 15)
-
-    # Recency Input
-    st.markdown("### Most Recent Purchase Date")
-    recency_slider = st.slider(
-        "Select your most recent purchase date",
-        min_value=today - timedelta(days=365),
-        max_value=today,
-        value=today - timedelta(days=30),
-        format="YYYY-MM-DD"
+if dimension == "RF":
+    fig2 = px.scatter(
+        rfm_data,
+        x="Recency",
+        y="Frequency",
+        color=f"{algorithm}_Cluster_{dimension}",
+        title=f"{algorithm} Clustering (Recency vs Frequency)",
+        hover_data=["Monetary"]
     )
-    recency_days = (today - recency_slider).days
-    st.write(f"Recency: {recency_days} days")
+elif dimension == "FM":
+    fig2 = px.scatter(
+        rfm_data,
+        x="Frequency",
+        y="Monetary",
+        color=f"{algorithm}_Cluster_{dimension}",
+        title=f"{algorithm} Clustering (Frequency vs Monetary)",
+        hover_data=["Recency"]
+    )
+else:  # RFM
+    fig2 = px.scatter_3d(
+        rfm_data,
+        x="Recency",
+        y="Frequency",
+        z="Monetary",
+        color=f"{algorithm}_Cluster_{dimension}",
+        title=f"{algorithm} Clustering (Recency vs Frequency vs Monetary)"
+    )
+st.plotly_chart(fig2, use_container_width=True)
 
-    # Frequency Input
-    st.markdown("### Frequency of Visiting the Store")
-    frequency_input = st.slider("Number of Visits", min_value=1, max_value=380, value=10)
-    st.write(f"Frequency: {frequency_input}")
+# Cluster analysis
+st.subheader(f"🔍 Cluster {cluster_to_analyze} Detailed Analysis")
 
-    # Monetary Input
-    st.markdown("### Total Amount Spent")
-    monetary_input = st.slider("Total Spent", min_value=1.0, max_value=300000.0, value=100.0, step=10.0)
-    st.write(f"Monetary: {monetary_input}")
+cluster_data = rfm_data[rfm_data[f"{algorithm}_Cluster_{dimension}"] == cluster_to_analyze]
+non_cluster_data = rfm_data[rfm_data[f"{algorithm}_Cluster_{dimension}"] != cluster_to_analyze]
 
-    # Predict cluster
-    user_data = np.array([[recency_days, frequency_input, monetary_input]])
-    user_scaled = scaler.transform(user_data)
+col1, col2, col3 = st.columns(3)
+col1.metric("Customers in Cluster", len(cluster_data))
+col2.metric("Avg Recency", f"{cluster_data['Recency'].mean():.1f} days")
+col3.metric("Avg Frequency", f"{cluster_data['Frequency'].mean():.1f}")
 
-    try:
-        prediction = model.predict(user_scaled)[0]
-        st.success(f"Predicted Cluster: {prediction} ({model_choice})")
-    except Exception as e:
-        st.error(f"Prediction error: {e}")
+col1, col2, col3 = st.columns(3)
+col1.metric("Avg Monetary", f"${cluster_data['Monetary'].mean():,.2f}")
+col2.metric("% of Total Revenue", f"{(cluster_data['Monetary'].sum() / rfm_data['Monetary'].sum())*100:.1f}%")
+col3.metric("Avg Customer Value", f"${cluster_data['Monetary'].mean() / cluster_data['Frequency'].mean():,.2f} per purchase")
 
-    # Main cluster plots
-    st.markdown(f"### Recency vs Frequency Clustering ({model_choice})")
-    plot_cluster(df, cluster_col, 'Recency', 'Frequency', model_choice)
+# Comparison plots
+st.subheader("📉 Cluster Comparison")
 
-    st.markdown(f"### Frequency vs Monetary Clustering ({model_choice})")
-    plot_cluster(df, cluster_col, 'Frequency', 'Monetary', model_choice)
+tab1, tab2, tab3 = st.tabs(["Recency", "Frequency", "Monetary"])
 
-    st.markdown(f"### Recency vs Monetary Clustering ({model_choice})")
-    plot_cluster(df, cluster_col, 'Recency', 'Monetary', model_choice)
+with tab1:
+    fig_rec = go.Figure()
+    fig_rec.add_trace(go.Box(y=cluster_data['Recency'], name=f'Cluster {cluster_to_analyze}'))
+    fig_rec.add_trace(go.Box(y=non_cluster_data['Recency'], name='Other Clusters'))
+    fig_rec.update_layout(title="Recency Comparison")
+    st.plotly_chart(fig_rec, use_container_width=True)
 
-    # 🔽 Additional Graphs 🔽
+with tab2:
+    fig_freq = go.Figure()
+    fig_freq.add_trace(go.Box(y=cluster_data['Frequency'], name=f'Cluster {cluster_to_analyze}'))
+    fig_freq.add_trace(go.Box(y=non_cluster_data['Frequency'], name='Other Clusters'))
+    fig_freq.update_layout(title="Frequency Comparison")
+    st.plotly_chart(fig_freq, use_container_width=True)
 
-    # Cluster count bar plot
-    st.markdown("### Cluster Count Distribution")
-    fig1, ax1 = plt.subplots()
-    sns.countplot(data=df, x=cluster_col, palette="Set2", ax=ax1)
-    ax1.set_title("Number of Customers per Cluster")
-    st.pyplot(fig1)
+with tab3:
+    fig_mon = go.Figure()
+    fig_mon.add_trace(go.Box(y=cluster_data['Monetary'], name=f'Cluster {cluster_to_analyze}'))
+    fig_mon.add_trace(go.Box(y=non_cluster_data['Monetary'], name='Other Clusters'))
+    fig_mon.update_layout(title="Monetary Comparison")
+    st.plotly_chart(fig_mon, use_container_width=True)
 
-    # Boxplots
-    st.markdown("### Boxplots of RFM by Cluster")
-    for feature in ['Recency', 'Frequency', 'Monetary']:
-        fig_box, ax_box = plt.subplots()
-        sns.boxplot(data=df, x=cluster_col, y=feature, palette="Set3", ax=ax_box)
-        ax_box.set_title(f"{feature} by Cluster")
-        st.pyplot(fig_box)
+# Cluster characteristics
+st.subheader("📋 Cluster Characteristics")
 
-    # Pairplot (optional: slow for large data)
-    st.markdown("### RFM Pairplot by Cluster")
-    st.info("This may take a few seconds for large datasets.")
-    sample_df = df[[cluster_col, 'Recency', 'Frequency', 'Monetary']].sample(n=500, random_state=42) if len(df) > 500 else df
-    fig_pair = sns.pairplot(sample_df, hue=cluster_col, palette="husl")
-    st.pyplot(fig_pair)
+if dimension == "RF":
+    cluster_means = rfm_data.groupby(f"{algorithm}_Cluster_{dimension}")[['Recency', 'Frequency']].mean()
+elif dimension == "FM":
+    cluster_means = rfm_data.groupby(f"{algorithm}_Cluster_{dimension}")[['Frequency', 'Monetary']].mean()
+else:
+    cluster_means = rfm_data.groupby(f"{algorithm}_Cluster_{dimension}")[['Recency', 'Frequency', 'Monetary']].mean()
 
-    # Optional: 3D plot (if using Plotly)
-    st.markdown("### 3D Cluster Plot (Recency, Frequency, Monetary)")
-    try:
-        import plotly.express as px
-        fig3d = px.scatter_3d(df, x='Recency', y='Frequency', z='Monetary',
-                              color=cluster_col, title="3D RFM Cluster View")
-        st.plotly_chart(fig3d)
-    except:
-        st.warning("Plotly not installed. Run `pip install plotly` if you'd like to enable the 3D view.")
+st.dataframe(cluster_means.style.background_gradient(cmap='Blues'), use_container_width=True)
 
+# Recommendations
+st.subheader("💡 Marketing Recommendations")
 
-if __name__ == "__main__":
-    main()
+if dimension == "RF":
+    if cluster_data['Recency'].mean() < rfm_data['Recency'].mean() and cluster_data['Frequency'].mean() > rfm_data['Frequency'].mean():
+        st.success("**Best Customers**: Recent and frequent purchasers. Reward them to encourage loyalty.")
+    elif cluster_data['Recency'].mean() > rfm_data['Recency'].mean() and cluster_data['Frequency'].mean() > rfm_data['Frequency'].mean():
+        st.warning("**At Risk Customers**: Used to purchase often but haven't recently. Win them back with reactivation campaigns.")
+    elif cluster_data['Recency'].mean() < rfm_data['Recency'].mean() and cluster_data['Frequency'].mean() < rfm_data['Frequency'].mean():
+        st.info("**New Customers**: Purchased recently but not often. Create onboarding to increase frequency.")
+    else:
+        st.error("**Hibernating Customers**: Not purchased recently or often. Consider low-cost reactivation or phase out.")
+
+elif dimension == "FM":
+    if cluster_data['Frequency'].mean() > rfm_data['Frequency'].mean() and cluster_data['Monetary'].mean() > rfm_data['Monetary'].mean():
+        st.success("**High Value Customers**: Frequent and high spending. Offer exclusive benefits and premium services.")
+    elif cluster_data['Frequency'].mean() > rfm_data['Frequency'].mean() and cluster_data['Monetary'].mean() < rfm_data['Monetary'].mean():
+        st.info("**Budget Shoppers**: Buy often but spend little. Cross-sell higher value items.")
+    elif cluster_data['Frequency'].mean() < rfm_data['Frequency'].mean() and cluster_data['Monetary'].mean() > rfm_data['Monetary'].mean():
+        st.warning("**Big Spenders**: Infrequent but high value purchases. Target with high-end offers.")
+    else:
+        st.error("**Low Engagement**: Infrequent and low spending. Consider win-back campaigns or budget offers.")
+
+else:  # RFM
+    if (cluster_data['Recency'].mean() < rfm_data['Recency'].mean() and 
+        cluster_data['Frequency'].mean() > rfm_data['Frequency'].mean() and 
+        cluster_data['Monetary'].mean() > rfm_data['Monetary'].mean()):
+        st.success("**Champions**: Recent, frequent and high value. Nurture with VIP treatment.")
+    elif (cluster_data['Recency'].mean() > rfm_data['Recency'].mean() and 
+          cluster_data['Frequency'].mean() > rfm_data['Frequency'].mean() and 
+          cluster_data['Monetary'].mean() > rfm_data['Monetary'].mean()):
+        st.warning("**Can't Lose Them**: Used to be high value but haven't purchased recently. Win them back urgently.")
+    elif (cluster_data['Recency'].mean() < rfm_data['Recency'].mean() and 
+          cluster_data['Frequency'].mean() < rfm_data['Frequency'].mean() and 
+          cluster_data['Monetary'].mean() < rfm_data['Monetary'].mean()):
+        st.info("**New Customers**: Need onboarding to increase frequency and value.")
+    else:
+        st.error("**Need Attention**: Mixed behavior. Requires targeted analysis and campaigns.")
+
+# Data table
+st.subheader("📁 Customer Data")
+st.dataframe(rfm_data.sort_values(by='Monetary', ascending=False), use_container_width=True)
+
+# Download button
+st.sidebar.download_button(
+    label="Download Cluster Data",
+    data=rfm_data.to_csv().encode('utf-8'),
+    file_name='rfm_cluster_data.csv',
+    mime='text/csv'
+)
+
+# Footer
+st.sidebar.markdown("---")
+st.sidebar.markdown("""
+**RFM Clustering Dashboard**  
+Created with Streamlit  
+Data last updated: {}
+""".format(pd.to_datetime('today').strftime('%Y-%m-%d')))
