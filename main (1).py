@@ -342,6 +342,7 @@ def main():
         st.plotly_chart(plot_clv_prediction(rfm_data), use_container_width=True)
     with col2:
         st.plotly_chart(plot_segmentation_matrix(rfm_data), use_container_width=True)
+    high_value_threshold = rfm_data['Monetary'].quantile(0.75)
     medium_value_threshold = rfm_data['Monetary'].quantile(0.5) 
     # Show overlapping customers
     medium_value_active = rfm_data[
