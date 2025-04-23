@@ -6,6 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 # Set page config
 st.set_page_config(
@@ -244,7 +245,7 @@ def plot_clv_prediction(rfm_data):
     )
     return fig
 
-def plot_pca_clusters(rfm_data, model_type='KMeans', features_type='RFM', model_num=1):
+def plot_pca_clusters(rfm_data, model_type='KMeans', features_type='RFM'):
     # Define features by model type
     model_features = {
         'RF': ['Recency', 'Frequency'],
@@ -277,7 +278,7 @@ def plot_pca_clusters(rfm_data, model_type='KMeans', features_type='RFM', model_
         y='PC2',
         color='Cluster',
         title=f'{model_type} PCA Cluster Distribution ({features_type} features)',
-        color_discrete_sequence=px.colors.qualitative.Pastel
+        color_discrete_sequence=['#1a73e8', '#4285f4', '#8ab4f8']  # Using consistent blue theme
     )
 
     fig.update_layout(
@@ -308,157 +309,6 @@ def plot_segmentation_matrix(rfm_data):
         yaxis_title="Total Spending ($)"
     )
     return fig
-
-
-def main():
-    st.title("📈 Advanced RFM Analytics Dashboard")
-    st.markdown("""
-    <style>
-        div[data-testid="stMarkdownContainer"] p {
-            color: black !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Load data
-    rfm_data, models = load_data()
-    if rfm_data is None or models is None:
-        st.stop()
-    
-    # Sidebar controls
-    st.sidebar.header("Configuration")
-    algorithm = st.sidebar.selectbox(
-        "Algorithm",
-        ["KMeans", "BIRCH", "GMM"],
-        key='algorithm'
-    )
-    dimension = st.sidebar.selectbox(
-        "Dimensions",
-        ["RF", "FM", "RFM"],
-        key='dimension'
-    )
-    cluster_col = f"{algorithm}_Cluster_{dimension}"
-    rfm_data['Cluster'] = rfm_data[cluster_col]  # Standardize column name
-    
-    # Overview section
-    st.header("🔍 Executive Summary")
-    
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Customers", len(rfm_data))
-    col2.metric("Total Clusters", rfm_data['Cluster'].nunique())
-    col3.metric("Total Revenue", f"${rfm_data['Monetary'].sum():,.2f}")
-    
-    # Cluster distribution
-    st.header("📊 Cluster Distribution")
-    cluster_counts = rfm_data['Cluster'].value_counts().sort_index()
-    
-    # Cluster overview pie chart
-    fig_pie = px.pie(
-        cluster_counts,
-        values=cluster_counts.values,
-        names=cluster_counts.index,
-        color=cluster_counts.index,
-        color_discrete_sequence=['#1a73e8', '#4285f4', '#8ab4f8'],
-        hole=0.3
-    )
-    fig_pie.update_layout(
-        title="Customer Distribution Across Clusters",
-        font=dict(color='black'),
-        showlegend=True
-    )
-    st.plotly_chart(fig_pie, use_container_width=True)
-    
-    # RFM 3D scatter plot
-    st.header("🌐 Customer Segmentation Overview")
-    fig_3d = px.scatter_3d(
-        rfm_data,
-        x='Recency',
-        y='Frequency',
-        z='Monetary',
-        color='Cluster',
-        color_discrete_sequence=['#1a73e8', '#4285f4', '#8ab4f8'],
-        opacity=0.7,
-        title='3D RFM Cluster Visualization'
-    )
-    fig_3d.update_layout(
-        font=dict(color='black'),
-        scene=dict(
-            xaxis_title='Recency (days)',
-            yaxis_title='Frequency',
-            zaxis_title='Monetary ($)'
-        )
-    )
-    st.plotly_chart(fig_3d, use_container_width=True)
-    
-    st.header("🎯 Combined CLV + Matrix Insights")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.plotly_chart(plot_clv_prediction(rfm_data), use_container_width=True)
-    with col2:
-        st.plotly_chart(plot_segmentation_matrix(rfm_data), use_container_width=True)
-    
-    trend_fig = create_trend_analysis(rfm_data)
-    if trend_fig:
-        st.header("📅 Time-Based Trends")
-        st.plotly_chart(trend_fig, use_container_width=True)
-    
-    st.header("🔬 Cluster Deep Dive Analysis")
-    
-    # Assuming rfm_data is already loaded
-    cluster_stats = rfm_data.groupby('Cluster').agg({
-        'Recency': 'mean',
-        'Frequency': 'mean',
-        'Monetary': ['mean', 'sum'],
-        'Customer ID': 'count'  # Changed to match your column name
-    })
-    cluster_stats.columns = ['Recency', 'Frequency', 'Monetary', 'Total_Revenue', 'Count']
-    
-    for cluster in cluster_stats.index:
-        stats = cluster_stats.loc[cluster]
-        fig, tier, tier_color = create_comprehensive_analysis(cluster, stats, rfm_data)
-        
-        with st.expander(f"📌 Cluster {cluster} - {tier} (Size: {stats['Count']} customers)", expanded=False):
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Business insights
-            st.markdown(f"""
-            <div class='cluster-card'>
-                <h4 style='color: black;'>📋 Cluster {cluster} Characteristics</h4>
-                <div class='metric-box'>
-                    <b>Recency:</b> {stats['Recency']:.1f} days ({(stats['Recency']/rfm_data['Recency'].mean()*100):.1f}% of average)
-                </div>
-                <div class='metric-box'>
-                    <b>Frequency:</b> {stats['Frequency']:.1f} purchases ({(stats['Frequency']/rfm_data['Frequency'].mean()*100):.1f}% of average)
-                </div>
-                <div class='metric-box'>
-                    <b>Avg. Monetary:</b> ${stats['Monetary']:,.2f} ({(stats['Monetary']/rfm_data['Monetary'].mean()*100):.1f}% of average)
-                </div>
-                <div class='metric-box'>
-                    <b>Total Revenue:</b> ${stats['Total_Revenue']:,.2f} ({(stats['Total_Revenue']/rfm_data['Monetary'].sum()*100):.1f}% of total)
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # Recommended engagement strategy
-            st.markdown(f"""
-            <h3 style='color: {tier_color}; border-bottom: 2px solid {tier_color}; padding-bottom: 8px;'>
-                Recommended Engagement Strategy
-            </h3>
-            {get_enhanced_recommendations(tier, stats, rfm_data)}
-            """, unsafe_allow_html=True)
-    
-    st.sidebar.markdown("---")
-    st.sidebar.header("Data Export")
-    if st.sidebar.button("Download Cluster Data"):
-        csv = rfm_data.to_csv(index=False).encode('utf-8')
-        st.sidebar.download_button(
-            label="Download as CSV",
-            data=csv,
-            file_name="rfm_cluster_data.csv",
-            mime="text/csv"
-        )
-
 
 # Helper functions
 def get_comparison_arrow(value, average):
@@ -587,7 +437,179 @@ def get_enhanced_recommendations(tier, stats, rfm_data):
     html_parts.append("</div>")
     
     return "".join(html_parts)
+    
 
+def main():
+    st.title("📈 Advanced RFM Analytics Dashboard")
+    st.markdown("""
+    <style>
+        div[data-testid="stMarkdownContainer"] p {
+            color: black !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Load data
+    rfm_data, models = load_data()
+    if rfm_data is None or models is None:
+        st.stop()
+    
+    # Sidebar controls
+    st.sidebar.header("Configuration")
+    algorithm = st.sidebar.selectbox(
+        "Algorithm",
+        ["KMeans", "BIRCH", "GMM"],
+        key='algorithm'
+    )
+    dimension = st.sidebar.selectbox(
+        "Dimensions",
+        ["RF", "FM", "RFM"],
+        key='dimension'
+    )
+    cluster_col = f"{algorithm}_Cluster_{dimension}"
+    rfm_data['Cluster'] = rfm_data[cluster_col]  # Standardize column name
+    
+    # Overview section
+    st.header("🔍 Executive Summary")
+    
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Customers", len(rfm_data))
+    col2.metric("Total Clusters", rfm_data['Cluster'].nunique())
+    col3.metric("Total Revenue", f"${rfm_data['Monetary'].sum():,.2f}")
+    
+    # Cluster distribution
+    st.header("📊 Cluster Distribution")
+    cluster_counts = rfm_data['Cluster'].value_counts().sort_index()
+    
+    # Cluster overview pie chart
+    fig_pie = px.pie(
+        cluster_counts,
+        values=cluster_counts.values,
+        names=cluster_counts.index,
+        color=cluster_counts.index,
+        color_discrete_sequence=['#1a73e8', '#4285f4', '#8ab4f8'],
+        hole=0.3
+    )
+    fig_pie.update_layout(
+        title="Customer Distribution Across Clusters",
+        font=dict(color='black'),
+        showlegend=True
+    )
+    st.plotly_chart(fig_pie, use_container_width=True)
+    
+    # RFM 3D scatter plot
+    st.header("🌐 Customer Segmentation Overview")
+    fig_3d = px.scatter_3d(
+        rfm_data,
+        x='Recency',
+        y='Frequency',
+        z='Monetary',
+        color='Cluster',
+        color_discrete_sequence=['#1a73e8', '#4285f4', '#8ab4f8'],
+        opacity=0.7,
+        title='3D RFM Cluster Visualization'
+    )
+    fig_3d.update_layout(
+        font=dict(color='black'),
+        scene=dict(
+            xaxis_title='Recency (days)',
+            yaxis_title='Frequency',
+            zaxis_title='Monetary ($)'
+        )
+    )
+    st.plotly_chart(fig_3d, use_container_width=True)
+    
+    st.header("🎯 Combined CLV + Matrix Insights")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.plotly_chart(plot_clv_prediction(rfm_data), use_container_width=True)
+    with col2:
+        st.plotly_chart(plot_segmentation_matrix(rfm_data), use_container_width=True)
+    
+    trend_fig = create_trend_analysis(rfm_data)
+    if trend_fig:
+        st.header("📅 Time-Based Trends")
+        st.plotly_chart(trend_fig, use_container_width=True)
+
+        # Add PCA Visualization section
+    st.header("🖼️ PCA Cluster Visualization")
+    
+    # Create columns for PCA controls
+    pca_col1, pca_col2 = st.columns(2)
+    with pca_col1:
+        pca_model_type = st.selectbox(
+            "Select Algorithm for PCA",
+            ["KMeans", "BIRCH", "GMM"],
+            key='pca_algorithm'
+        )
+    with pca_col2:
+        pca_features_type = st.selectbox(
+            "Select Features for PCA",
+            ["RF", "FM", "RFM"],
+            key='pca_features'
+        )
+    
+    # Generate and display PCA plot
+    pca_fig = plot_pca_clusters(rfm_data, pca_model_type, pca_features_type)
+    st.plotly_chart(pca_fig, use_container_width=True)
+    
+    st.header("🔬 Cluster Deep Dive Analysis")
+    
+    # Assuming rfm_data is already loaded
+    cluster_stats = rfm_data.groupby('Cluster').agg({
+        'Recency': 'mean',
+        'Frequency': 'mean',
+        'Monetary': ['mean', 'sum'],
+        'Customer ID': 'count'  # Changed to match your column name
+    })
+    cluster_stats.columns = ['Recency', 'Frequency', 'Monetary', 'Total_Revenue', 'Count']
+    
+    for cluster in cluster_stats.index:
+        stats = cluster_stats.loc[cluster]
+        fig, tier, tier_color = create_comprehensive_analysis(cluster, stats, rfm_data)
+        
+        with st.expander(f"📌 Cluster {cluster} - {tier} (Size: {stats['Count']} customers)", expanded=False):
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Business insights
+            st.markdown(f"""
+            <div class='cluster-card'>
+                <h4 style='color: black;'>📋 Cluster {cluster} Characteristics</h4>
+                <div class='metric-box'>
+                    <b>Recency:</b> {stats['Recency']:.1f} days ({(stats['Recency']/rfm_data['Recency'].mean()*100):.1f}% of average)
+                </div>
+                <div class='metric-box'>
+                    <b>Frequency:</b> {stats['Frequency']:.1f} purchases ({(stats['Frequency']/rfm_data['Frequency'].mean()*100):.1f}% of average)
+                </div>
+                <div class='metric-box'>
+                    <b>Avg. Monetary:</b> ${stats['Monetary']:,.2f} ({(stats['Monetary']/rfm_data['Monetary'].mean()*100):.1f}% of average)
+                </div>
+                <div class='metric-box'>
+                    <b>Total Revenue:</b> ${stats['Total_Revenue']:,.2f} ({(stats['Total_Revenue']/rfm_data['Monetary'].sum()*100):.1f}% of total)
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Recommended engagement strategy
+            st.markdown(f"""
+            <h3 style='color: {tier_color}; border-bottom: 2px solid {tier_color}; padding-bottom: 8px;'>
+                Recommended Engagement Strategy
+            </h3>
+            {get_enhanced_recommendations(tier, stats, rfm_data)}
+            """, unsafe_allow_html=True)
+    
+    st.sidebar.markdown("---")
+    st.sidebar.header("Data Export")
+    if st.sidebar.button("Download Cluster Data"):
+        csv = rfm_data.to_csv(index=False).encode('utf-8')
+        st.sidebar.download_button(
+            label="Download as CSV",
+            data=csv,
+            file_name="rfm_cluster_data.csv",
+            mime="text/csv"
+        )
+        
 
 if __name__ == "__main__":
     main()
