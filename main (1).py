@@ -321,7 +321,7 @@ def main():
     """, unsafe_allow_html=True)
     
     # Load data
-    rfm_data, models = load_data()  # Assuming this method is defined to load your dataset
+    rfm_data, models = load_data()
     if rfm_data is None or models is None:
         st.stop()
     
@@ -337,7 +337,7 @@ def main():
         ["RF", "FM", "RFM"],
         key='dimension'
     )
-    cluster_col = f"{algorithm}Cluster{dimension}"
+    cluster_col = f"{algorithm}_Cluster_{dimension}"
     rfm_data['Cluster'] = rfm_data[cluster_col]  # Standardize column name
     
     # Overview section
@@ -389,11 +389,6 @@ def main():
         )
     )
     st.plotly_chart(fig_3d, use_container_width=True)
-    
-    # Add PCA Cluster Visualization
-    st.header("📊 PCA Clustering Visualization")
-    pca_fig = plot_pca_clusters(rfm_data, model_type=algorithm, features_type=dimension)
-    st.plotly_chart(pca_fig, use_container_width=True)
     
     st.header("🎯 Combined CLV + Matrix Insights")
     
