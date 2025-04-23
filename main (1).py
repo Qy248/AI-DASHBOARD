@@ -253,12 +253,16 @@ def plot_pca_clusters(rfm_data, model_type='KMeans', features_type='RFM'):
         'RFM': ['Recency', 'Frequency', 'Monetary']
     }
 
-    # Define cluster column based on the model and features
-    cluster_col = f'{model_type}Cluster{features_type}'
+    # Define cluster column based on the model and features (using correct format with underscores)
+    cluster_col = f'{model_type}_Cluster_{features_type}'
+
+    # Check if the column exists in the data
+    if cluster_col not in rfm_data.columns:
+        st.error(f"Cluster column '{cluster_col}' not found in data. Available columns: {list(rfm_data.columns)}")
+        return px.scatter()  # Return empty figure if column not found
 
     # Extract features and cluster column
     features = model_features[features_type]
-    cluster_col = f'{model_type}Cluster{features_type}'
 
     # Prepare data for PCA
     X = rfm_data[features]
