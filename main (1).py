@@ -192,37 +192,45 @@ def create_comprehensive_analysis(cluster_num, stats, rfm_data):
     return fig, tier, tier_color
 
 def create_trend_analysis(rfm_data):
-    # Create time-based trends if date column exists
-    if 'Purchase_Date' in rfm_data.columns:
-        rfm_data['Purchase_Date'] = pd.to_datetime(rfm_data['Purchase_Date'])
-        rfm_data['Month'] = rfm_data['Purchase_Date'].dt.to_period('M')
-        
-        monthly_data = rfm_data.groupby(['Month', 'Cluster']).agg({
-            'Recency': 'mean',
-            'Frequency': 'mean',
-            'Monetary': 'mean',
-            'Customer ID': 'count'  # Changed to match your column name
-        }).reset_index()
-        monthly_data['Month'] = monthly_data['Month'].astype(str)
-        
-        fig = px.line(
-            monthly_data,
-            x='Month',
-            y='Monetary',
-            color='Cluster',
-            color_discrete_sequence=['#1a73e8', '#4285f4', '#8ab4f8'],
-            facet_col='Cluster',
-            facet_col_wrap=3,
-            title='Monthly Monetary Trends by Cluster',
-            labels={'Monetary': 'Average Spending ($)'}
-        )
-        fig.update_layout(
-            font=dict(color='black'),
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)'
-        )
-        return fig
-    return None
+    # Define recency buckets
+    bins = [0, 30, 60, 90, 120, float('inf')]
+    labels = ['0-30 days', '31-60 days', '61-90 days', '91-120 days', '120+ days']
+    rfm_data['Recency_Bucket'] = pd.cut(rfm_data['Recency'], bins=bins, labels=labels, right=False)
+
+    # Calculate average Frequency and Monetary for each recency bucket
+    grouped = rfm_data.groupby('Recency_Bucket').agg({
+        'Frequency': 'mean',
+        'Monetary': 'mean',
+        'Customer ID': 'count'  # To show size of each bucket
+    }).reset_index()
+    grouped.rename(columns={'Customer ID': 'Customer Count'}, inplace=True)
+
+    # Melt for line plotting
+    melted = grouped.melt(id_vars=['Recency_Bucket'], value_vars=['Frequency', 'Monetary'],
+                          var_name='Metric', value_name='Average Value')
+
+    # Plot
+    fig = px.line(
+        melted,
+        x='Recency_Bucket',
+        y='Average Value',
+        color='Metric',
+        markers=True,
+        title="Customer Frequency & Monetary Trends by Recency Bucket",
+        color_discrete_sequence=['#1a73e8', '#34a853']
+    )
+
+    fig.update_traces(line=dict(width=3), marker=dict(size=8, line=dict(width=2, color='white')))
+    fig.update_layout(
+        xaxis_title="Recency Bucket",
+        yaxis_title="Average Value",
+        font=dict(color='black'),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        legend_title="Metric"
+    )
+
+    return fig
 
 def plot_clv_prediction(rfm_data):
     rfm_data['CLV'] = (rfm_data['Monetary'] * rfm_data['Frequency']) / (rfm_data['Recency'] + 1)  
@@ -235,6 +243,53 @@ def plot_clv_prediction(rfm_data):
         showlegend=False
     )
     return fig
+
+def plot_pca_clusters(rfm_data, model_type='KMeans', features_type='RFM', model_num=1):
+    # Define features by model type
+    model_features = {
+        'RF': ['Recency', 'Frequency'],
+        'FM': ['Frequency', 'Monetary'],
+        'RFM': ['Recency', 'Frequency', 'Monetary']
+    }
+
+    # Define cluster column based on the model and features
+    cluster_col = f'{model_type}Cluster{features_type}'
+
+    # Extract features and cluster column
+    features = model_features[features_type]
+    cluster_col = f'{model_type}Cluster{features_type}'
+
+    # Prepare data for PCA
+    X = rfm_data[features]
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    # Apply PCA
+    pca = PCA(n_components=2)
+    principal_components = pca.fit_transform(X_scaled)
+    pca_df = pd.DataFrame(data=principal_components, columns=['PC1', 'PC2'])
+    pca_df['Cluster'] = rfm_data[cluster_col].astype(str)
+
+    # Plot
+    fig = px.scatter(
+        pca_df,
+        x='PC1',
+        y='PC2',
+        color='Cluster',
+        title=f'{model_type} PCA Cluster Distribution ({features_type} features)',
+        color_discrete_sequence=px.colors.qualitative.Pastel
+    )
+
+    fig.update_layout(
+        font=dict(color='black'),
+        xaxis_title='Principal Component 1',
+        yaxis_title='Principal Component 2',
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)'
+    )
+
+    return fig
+
 
 def plot_segmentation_matrix(rfm_data):
     fig = px.scatter(
@@ -334,6 +389,10 @@ def main():
         )
     )
     st.plotly_chart(fig_3d, use_container_width=True)
+
+    st.header("📊 PCA Clustering Visualization")
+    pca_fig = plot_pca_clusters(rfm_data, model_type=algorithm, features_type=dimension)
+    st.plotly_chart(pca_fig, use_container_width=True)
     
     st.header("🎯 Combined CLV + Matrix Insights")
     
