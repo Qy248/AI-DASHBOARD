@@ -256,60 +256,45 @@ def plot_pca_clusters(rfm_data, model_type='KMeans', features_type='RFM'):
     # Define cluster column based on the model and features
     cluster_col = f"{model_type}_Cluster_{features_type}"
     
-    # Check if features exist
+    # Check if the cluster column exists
+    if cluster_col not in rfm_data.columns:
+        st.warning(f"Cluster column '{cluster_col}' not found in the data.")
+        return None
+
     features = model_features.get(features_type)
     if not features:
-        st.error(f"Invalid features type: {features_type}")
-        return go.Figure()
-    
-    # Check if cluster column exists
-    if cluster_col not in rfm_data.columns:
-        st.error(f"Cluster column '{cluster_col}' not found in data")
-        return go.Figure()
-    
-    try:
-        # Prepare data for PCA
-        X = rfm_data[features]
-        scaler = StandardScaler()
-        X_scaled = scaler.fit_transform(X)
+        st.warning(f"Invalid feature type '{features_type}' provided.")
+        return None
 
-        # Apply PCA
-        pca = PCA(n_components=2)
-        principal_components = pca.fit_transform(X_scaled)
-        pca_df = pd.DataFrame(data=principal_components, columns=['PC1', 'PC2'])
-        pca_df['Cluster'] = rfm_data[cluster_col].astype(str)
+    # Subset and scale the data
+    subset = rfm_data[features].dropna()
+    scaler = StandardScaler()
+    scaled_data = scaler.fit_transform(subset)
 
-        # Plot
-        fig = px.scatter(
-            pca_df,
-            x='PC1',
-            y='PC2',
-            color='Cluster',
-            title=f'{model_type} Cluster Visualization ({features_type} features)',
-            color_discrete_sequence=['#1a73e8', '#4285f4', '#8ab4f8'],
-            hover_data={'PC1': False, 'PC2': False, 'Cluster': True}
-        )
+    # Apply PCA
+    pca = PCA(n_components=2)
+    pca_result = pca.fit_transform(scaled_data)
 
-        fig.update_layout(
-            font=dict(color='black'),
-            xaxis_title='Principal Component 1',
-            yaxis_title='Principal Component 2',
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            legend_title="Cluster"
-        )
-        
-        # Add variance explained to the title
-        var_explained = pca.explained_variance_ratio_
-        fig.update_layout(
-            title=f'{model_type} Clusters ({features_type} features)<br><sup>Variance Explained: PC1: {var_explained[0]*100:.1f}%, PC2: {var_explained[1]*100:.1f}%</sup>'
-        )
-        
-        return fig
-        
-    except Exception as e:
-        st.error(f"Error generating PCA plot: {str(e)}")
-        return go.Figure()
+    # Prepare DataFrame for plotting
+    pca_df = pd.DataFrame(pca_result, columns=['PC1', 'PC2'])
+    pca_df['Cluster'] = rfm_data.loc[subset.index, cluster_col].astype(str)
+
+    # Plot using Plotly
+    fig = px.scatter(
+        pca_df, x='PC1', y='PC2', color='Cluster',
+        title=f"<b>PCA Cluster Visualization</b><br>{model_type} model on {features_type} features",
+        color_discrete_sequence=px.colors.qualitative.Set1,
+        labels={'Cluster': 'Cluster Group'}
+    )
+
+    fig.update_traces(marker=dict(size=8, line=dict(width=1, color='DarkSlateGrey')))
+    fig.update_layout(
+        font=dict(color='black'),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)'
+    )
+
+    return fig
 
 
 def plot_segmentation_matrix(rfm_data):
