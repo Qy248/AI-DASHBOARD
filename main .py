@@ -253,47 +253,63 @@ def plot_pca_clusters(rfm_data, model_type='KMeans', features_type='RFM'):
         'RFM': ['Recency', 'Frequency', 'Monetary']
     }
 
-    # Define cluster column based on the model and features (using correct format with underscores)
-    cluster_col = f'{model_type}_Cluster_{features_type}'
-
-    # Check if the column exists in the data
+    # Define cluster column based on the model and features
+    cluster_col = f"{model_type}_Cluster_{features_type}"
+    
+    # Check if features exist
+    features = model_features.get(features_type)
+    if not features:
+        st.error(f"Invalid features type: {features_type}")
+        return go.Figure()
+    
+    # Check if cluster column exists
     if cluster_col not in rfm_data.columns:
-        st.error(f"Cluster column '{cluster_col}' not found in data. Available columns: {list(rfm_data.columns)}")
-        return px.scatter()  # Return empty figure if column not found
+        st.error(f"Cluster column '{cluster_col}' not found in data")
+        return go.Figure()
+    
+    try:
+        # Prepare data for PCA
+        X = rfm_data[features]
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
 
-    # Extract features and cluster column
-    features = model_features[features_type]
+        # Apply PCA
+        pca = PCA(n_components=2)
+        principal_components = pca.fit_transform(X_scaled)
+        pca_df = pd.DataFrame(data=principal_components, columns=['PC1', 'PC2'])
+        pca_df['Cluster'] = rfm_data[cluster_col].astype(str)
 
-    # Prepare data for PCA
-    X = rfm_data[features]
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+        # Plot
+        fig = px.scatter(
+            pca_df,
+            x='PC1',
+            y='PC2',
+            color='Cluster',
+            title=f'{model_type} Cluster Visualization ({features_type} features)',
+            color_discrete_sequence=['#1a73e8', '#4285f4', '#8ab4f8'],
+            hover_data={'PC1': False, 'PC2': False, 'Cluster': True}
+        )
 
-    # Apply PCA
-    pca = PCA(n_components=2)
-    principal_components = pca.fit_transform(X_scaled)
-    pca_df = pd.DataFrame(data=principal_components, columns=['PC1', 'PC2'])
-    pca_df['Cluster'] = rfm_data[cluster_col].astype(str)
-
-    # Plot
-    fig = px.scatter(
-        pca_df,
-        x='PC1',
-        y='PC2',
-        color='Cluster',
-        title=f'{model_type} PCA Cluster Distribution ({features_type} features)',
-        color_discrete_sequence=['#1a73e8', '#4285f4', '#8ab4f8']  # Using consistent blue theme
-    )
-
-    fig.update_layout(
-        font=dict(color='black'),
-        xaxis_title='Principal Component 1',
-        yaxis_title='Principal Component 2',
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)'
-    )
-
-    return fig
+        fig.update_layout(
+            font=dict(color='black'),
+            xaxis_title='Principal Component 1',
+            yaxis_title='Principal Component 2',
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            legend_title="Cluster"
+        )
+        
+        # Add variance explained to the title
+        var_explained = pca.explained_variance_ratio_
+        fig.update_layout(
+            title=f'{model_type} Clusters ({features_type} features)<br><sup>Variance Explained: PC1: {var_explained[0]*100:.1f}%, PC2: {var_explained[1]*100:.1f}%</sup>'
+        )
+        
+        return fig
+        
+    except Exception as e:
+        st.error(f"Error generating PCA plot: {str(e)}")
+        return go.Figure()
 
 
 def plot_segmentation_matrix(rfm_data):
@@ -537,25 +553,14 @@ def main():
         st.plotly_chart(trend_fig, use_container_width=True)
 
         # Add PCA Visualization section
+       # PCA Visualization section (using same selections as sidebar)
     st.header("🖼️ PCA Cluster Visualization")
+    st.markdown(f"""
+    *Visualizing {dimension} clusters created by {algorithm} algorithm in 2D space*
+    """)
     
-    # Create columns for PCA controls
-    pca_col1, pca_col2 = st.columns(2)
-    with pca_col1:
-        pca_model_type = st.selectbox(
-            "Select Algorithm for PCA",
-            ["KMeans", "BIRCH", "GMM"],
-            key='pca_algorithm'
-        )
-    with pca_col2:
-        pca_features_type = st.selectbox(
-            "Select Features for PCA",
-            ["RF", "FM", "RFM"],
-            key='pca_features'
-        )
-    
-    # Generate and display PCA plot
-    pca_fig = plot_pca_clusters(rfm_data, pca_model_type, pca_features_type)
+    # Generate and display PCA plot using current sidebar selections
+    pca_fig = plot_pca_clusters(rfm_data, algorithm, dimension)
     st.plotly_chart(pca_fig, use_container_width=True)
     
     st.header("🔬 Cluster Deep Dive Analysis")
