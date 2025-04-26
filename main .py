@@ -80,19 +80,45 @@ def load_data():
         st.error(f"Error loading data: {str(e)}")
         return None, None
 
-def get_value_tier(monetary_value, rfm_data):
-    q25 = rfm_data['Monetary'].quantile(0.25)
-    q75 = rfm_data['Monetary'].quantile(0.75)
-    
-    if monetary_value > q75:
-        return "High Value", "#1a73e8"  # Dark blue
-    elif monetary_value > q25:
-        return "Medium Value", "#4285f4"  # Medium blue
+
+def get_value_tier(stats, rfm_data):
+    """
+    Assigns a value tier (High, Medium, Low) to a cluster based on normalized RFM metrics.
+    Lower Recency is better, higher Frequency and Monetary are better.
+    """
+    # Normalize metrics for the current cluster
+    recency_norm = 1 - ((stats['Recency'] - rfm_data['Recency'].min()) / (rfm_data['Recency'].max() - rfm_data['Recency'].min()))
+    frequency_norm = (stats['Frequency'] - rfm_data['Frequency'].min()) / (rfm_data['Frequency'].max() - rfm_data['Frequency'].min())
+    monetary_norm = (stats['Monetary'] - rfm_data['Monetary'].min()) / (rfm_data['Monetary'].max() - rfm_data['Monetary'].min())
+
+    # Composite score: average of normalized metrics
+    score = (recency_norm + frequency_norm + monetary_norm) / 3
+
+    # Calculate composite scores for all clusters
+    cluster_stats = rfm_data.groupby('Cluster').agg({
+        'Recency': 'mean',
+        'Frequency': 'mean',
+        'Monetary': 'mean'
+    })
+    cluster_stats['recency_norm'] = 1 - ((cluster_stats['Recency'] - rfm_data['Recency'].min()) / (rfm_data['Recency'].max() - rfm_data['Recency'].min()))
+    cluster_stats['frequency_norm'] = (cluster_stats['Frequency'] - rfm_data['Frequency'].min()) / (rfm_data['Frequency'].max() - rfm_data['Frequency'].min())
+    cluster_stats['monetary_norm'] = (cluster_stats['Monetary'] - rfm_data['Monetary'].min()) / (rfm_data['Monetary'].max() - rfm_data['Monetary'].min())
+    cluster_stats['score'] = (cluster_stats['recency_norm'] + cluster_stats['frequency_norm'] + cluster_stats['monetary_norm']) / 3
+
+    q25 = cluster_stats['score'].quantile(0.25)
+    q75 = cluster_stats['score'].quantile(0.75)
+
+    if score >= q75:
+        return "High Value", "#1a73e8"
+    elif score >= q25:
+        return "Medium Value", "#4285f4"
     else:
-        return "Low Value", "#8ab4f8"  # Light blue
+        return "Low Value", "#8ab4f8"
+
 
 def create_comprehensive_analysis(cluster_num, stats, rfm_data):
-    tier, tier_color = get_value_tier(stats['Monetary'], rfm_data)
+    cluster_data = rfm_data[rfm_data['Cluster'] == cluster_num]
+    tier, tier_color = get_value_tier(stats, rfm_data)
     
     # Create subplots grid
     fig = make_subplots(
